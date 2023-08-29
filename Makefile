@@ -28,7 +28,7 @@ INCLUDES = -I include/ -I /usr/local/include
 LIBS =
 
 .PHONY: default_target
-default_target: release
+default_target: releasett
 
 .PHONY: release
 release: export CXXFLAGS := $(CXXFLAGS) $(COMPILE_FLAGS)
