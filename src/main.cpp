@@ -1,9 +1,8 @@
 #include <iostream>
-#include "test.h"
+#include "lexer/filestream.h"
 
 int main() {
     std::cout << "Hello, World!" << std::endl;
-    print_hey();
     return 0;
 
 }
