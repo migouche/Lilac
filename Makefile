@@ -28,7 +28,7 @@ INCLUDES = -I include/ -I /usr/local/include
 LIBS =
 
 .PHONY: default_target
-default_target: releasett
+default_target: release
 
 .PHONY: release
 release: export CXXFLAGS := $(CXXFLAGS) $(COMPILE_FLAGS)
@@ -41,13 +41,7 @@ dirs:
 	@mkdir -p $(dir $(OBJECTS))
 	@mkdir -p $(BIN_PATH)
 
-.PHONY: clean
-clean:
-	@echo "Deleting $(BIN_NAME) symlink"
-	@$(RM) $(BIN_NAME)
-	@echo "Deleting directories"
-	@$(RM) -r $(BUILD_PATH)
-	@$(RM) -r $(BIN_PATH)
+
 
 # checks the executable and symlinks to the output
 .PHONY: all
@@ -74,3 +68,17 @@ $(BUILD_PATH)/%.o: $(SRC_PATH)/%.$(SRC_EXT)
 .SILENT: run
 run: $(BIN_PATH)/$(BIN_NAME)
 	./$(BIN_PATH)/$(BIN_NAME)
+
+
+.PHONY: clean
+clean::
+	@echo "Deleting $(BIN_NAME) symlink"
+	@$(RM) $(BIN_NAME)
+	@echo "Deleting directories"
+	@$(RM) -r $(BUILD_PATH)
+	@$(RM) -r $(BIN_PATH)
+
+SHAREDLIBNAME = lilac.so
+EXENAME = lilac
+
+include TESTUDO_CUSTOM_MAKEFILE

@@ -34,3 +34,6 @@ CMakeLists.txt
 cmake-build-debug/
 .idea/
 build/
+.depend/
+.object/
+.testudo/
