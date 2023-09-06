@@ -1,8 +1,0 @@
-#include <testudo/testudo_lc>
-
-define_top_test_node("tests", (test, "testing"));
-
-define_test(test, "testing")
-{
-    check(4)_equal(4);
-}

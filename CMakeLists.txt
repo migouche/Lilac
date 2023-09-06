@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.01)
 
 project(Lilac)
 
@@ -10,4 +10,5 @@ endif ()
 
 include_directories(include)
 
-add_executable(lilac src/main.cpp include/lexer/filestream.h src/lexer/filestream.cpp)
+add_executable(lilac src/main.cpp include/lexer/filestream.h src/lexer/filestream.cpp include/lexer/token.h src/lexer/token.cpp include/typedefs.h)
+

@@ -6,7 +6,7 @@ BUILD_PATH = build
 BIN_PATH = $(BUILD_PATH)/bin
 
 # executable #
-BIN_NAME = runner
+BIN_NAME = lilac
 
 # extensions #
 SRC_EXT = cpp
@@ -67,6 +67,8 @@ $(BUILD_PATH)/%.o: $(SRC_PATH)/%.$(SRC_EXT)
 
 .SILENT: run
 run: $(BIN_PATH)/$(BIN_NAME)
+	make -s
+	@echo "Running $(BIN_NAME):"
 	./$(BIN_PATH)/$(BIN_NAME)
 
 
