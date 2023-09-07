@@ -2,7 +2,7 @@
 
 /// * Arguments should be non-mutable, as they are not values to contain, only values to refer to (this is more math than c)
 
-func factorial (int) -> int
+func factorial (nat) -> nat
 {
     factorial(0) = 1;
     factorial(n) = n * factorial(n - 1);
@@ -25,9 +25,8 @@ func division (float, float) -> ResultFloat
 
 enum Thing { A, B, C, D, E, F }
 
-func is_D (Thing) -> bool
-{
-    is_D(.D) = true;
+func is_D (Thing)->bool{
+    is_D(.D)=true;
     is_D(_) = false; // pattern matching for enums
 }
 
@@ -35,4 +34,11 @@ func get_float_else_zero(ResultFloat) -> float
 {
     get_float_else_zero(.Error) = 0;
     get_float_else_zero(.Ok(n)) = n;
+}
+
+func fibonacci (nat) -> nat
+{
+    .(0) = 0;
+    .(1) = 1;
+    .(n) = .(n-1) + .(n-2);
 }

@@ -3,6 +3,7 @@
 //
 
 #include <utility>
+#include <cassert>
 #include "lexer/filestream.h"
 
 // separators: ' ', '\n', '\t', '\r', '\n\r', '\r\n'
@@ -37,6 +38,36 @@ bool is_single_character_token(char c)
     return c == '(' || c == ')' || c == '{' || c == '}' || c == '[' || c == ']' || c == ',' || c == ';' || c == ':' || c == '.';
 }
 
+bool is_operator_character(char c)
+{
+    return c == '+' || c == '-' || c == '*' || c == '/' || c == '%' || c == '>' || c == '<' || c == '=' || c == '!' || c == '&' || c == '|' || c == '^' || c == '~';
+}
+
+bool is_operator(std::ifstream& file, std::string& out_string)
+{
+    if(!is_operator_character(char(file.peek())))
+        return false;
+    std::string r;
+
+    while(!file.eof() && is_operator_character(char(file.peek())))
+    {
+        char c;
+        file.get(c);
+        if(c == '/' && file.peek() == '/')
+        {
+            file.putback('/');
+            if(out_string.empty())
+                return false;
+            out_string = r;
+            return true;
+        }
+
+        r += c;
+    }
+    out_string = r;
+    return true;
+}
+
 std::string FileStream::get_token() {
     std::string r_token;
     if(!file)
@@ -54,6 +85,9 @@ std::string FileStream::get_token() {
 
     while(is_whitespace(char(file.peek())))
         file.get();
+
+    if(is_operator(file, r_token))
+        return swap_buffer(r_token);
 
     while (!file.eof()) {
         char c;
@@ -85,6 +119,13 @@ std::string FileStream::get_token() {
             }
         }
 
+        if(is_operator_character(c))
+        {
+            assert(!r_token.empty());
+            file.putback(c);
+            break;
+        }
+
         if(!file.eof()) // I don't know why but this is needed (can be reworked into do while, but later)
             r_token += c;
 
@@ -104,7 +145,6 @@ FileStream::FileStream(const std::string& filename) {
     if (!file) {
         throw std::runtime_error("Could not open file " + filename);
     }
-
     get_token();
 }
 
