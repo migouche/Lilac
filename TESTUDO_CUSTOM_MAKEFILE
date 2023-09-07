@@ -57,7 +57,7 @@ exe: $(EXE)
 $(TESTUDOBINDIR)/%.ttb: %.ttd $(TTD_ADDITIONAL_PREREQUISITES)
 	@ mkdir -p $(DEPDIR)/$(dir $<) $(dir $@)
 	@ echo compiling $@
-	@ $(GPP) -Wp,-MMD,$(DEPDIR)/$*.td,-MP,-MT,$@ $(CFLAGS) $(COMPILEOPTS) \
+	@ $(GPP) -Wp,-MMD,$(DEPDIR)/$*.td,-MP,-MT,$@ $(CFLAGS) $(COMPILEOPTS) -I ./include \
 		-x c++ -I$(HEADERSDIR) -fPIC -shared $< -o $@
 
 $(OBJDIR)/%.o: %.cpp $(O_ADDITIONAL_PREREQUISITES)

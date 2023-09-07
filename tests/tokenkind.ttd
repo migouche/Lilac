@@ -1,6 +1,6 @@
 #include <testudo/testudo_lc>
-#include "../include/lexer/token.h"
-#include "../include/typedefs.h"
+#include "lexer/token.h"
+#include "typedefs.h"
 
 define_top_test_node("tokenkind", (tokenkind, "testing tokenkind enum"));
 
