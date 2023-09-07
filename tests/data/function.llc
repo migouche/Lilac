@@ -1,0 +1,4 @@
+func plus_one (int) -> (int)
+{
+    plus_one(n)=n+1
+}

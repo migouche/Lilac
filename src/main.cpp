@@ -1,13 +1,19 @@
 #include <iostream>
-#include "lexer/filestream.h"
-#include "lexer/token.h"
+#include <tuple>
+#include "lexer/tokenizer.h"
+#include "typedefs.h"
 
 int main() {
-    auto file = FileStream("data/driver.llc");
+    Tokenizer tokenizer("data/driver.llc");
 
-    std::cout << "tokens: \n\n";
-    while(!file.is_eof())
-        std::cout << file.get_token() << std::endl;
+    for (const auto& [token, value]: tokenizer)
+    {
+        if(value.empty())
+            std::cout << std::hex << ull(token) << " : "<< get_string_from_token(token) <<  std::endl;
+        else
+            std::cout << std::hex << ull(token) << " : "<< value << std::endl;
+
+    }
 
 
     return 0;

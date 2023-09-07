@@ -5,47 +5,13 @@
 #include <utility>
 #include <cassert>
 #include "lexer/filestream.h"
-
+#include "lexer/lexerfunctions.h"
 // separators: ' ', '\n', '\t', '\r', '\n\r', '\r\n'
-
-bool is_whitespace(char c)
-{
-    return c == ' ' || c == '\t' || c == '\n' || c == '\r';
-}
-
-bool is_newline(char c)
-{
-    return c == '\n' || c == '\r';
-}
-
-bool is_numeric(char c)
-{
-    return c >= '0' && c <= '9';
-}
-
-bool is_alpha(char c)
-{
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
-}
-
-bool is_alphanumeric(char c)
-{
-    return is_alpha(c) || is_numeric(c);
-}
-
-bool is_single_character_token(char c)
-{
-    return c == '(' || c == ')' || c == '{' || c == '}' || c == '[' || c == ']' || c == ',' || c == ';' || c == ':' || c == '.';
-}
-
-bool is_operator_character(char c)
-{
-    return c == '+' || c == '-' || c == '*' || c == '/' || c == '%' || c == '>' || c == '<' || c == '=' || c == '!' || c == '&' || c == '|' || c == '^' || c == '~';
-}
+using namespace lexer_functions;
 
 bool is_operator(std::ifstream& file, std::string& out_string)
 {
-    if(!is_operator_character(char(file.peek())))
+    if(! is_operator_character(char(file.peek())))
         return false;
     std::string r;
 
@@ -110,7 +76,7 @@ std::string FileStream::get_token() {
             break;
         }
 
-        if(is_single_character_token(c)) {
+        if(is_special_character(c)) {
             if(r_token.empty())
                 return swap_buffer({c});
             else {

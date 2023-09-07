@@ -1,6 +1,7 @@
 //syntax_tests.llc
 
 /// * Arguments should be non-mutable, as they are not values to contain, only values to refer to (this is more math than c)
+/// Parenthesis are not needed actually, because we can infer type as func name T1, ..., Tn -> R1, ..., Rn {...}
 
 func factorial (nat) -> nat
 {
@@ -30,15 +31,20 @@ func is_D (Thing)->bool{
     is_D(_) = false; // pattern matching for enums
 }
 
-func get_float_else_zero(ResultFloat) -> float
+func get_float_else_zero ResultFloat -> float
 {
     get_float_else_zero(.Error) = 0;
     get_float_else_zero(.Ok(n)) = n;
 }
 
-func fibonacci (nat) -> nat
+func fibonacci nat -> nat
 {
     .(0) = 0;
     .(1) = 1;
     .(n) = .(n-1) + .(n-2);
+}
+
+func unpack_complex complex -> real, real // I'm just making up types along the way
+{
+    unpack_complex(c) = (c.real, c.imaginary);
 }

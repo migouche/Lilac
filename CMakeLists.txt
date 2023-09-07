@@ -12,5 +12,7 @@ include_directories(include)
 
 add_executable(lilac src/main.cpp include/lexer/filestream.h src/lexer/filestream.cpp include/lexer/token.h src/lexer/token.cpp include/typedefs.h
         include/lexer/tokenizer.h
-        src/lexer/tokenizer.cpp)
+        src/lexer/tokenizer.cpp
+        include/lexer/lexerfunctions.h
+        src/lexer/lexerfunctions.cpp)
 
