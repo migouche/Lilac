@@ -5,6 +5,7 @@
 int main() {
     auto file = FileStream("data/driver.llc");
 
+    std::cout << "tokens: \n\n";
     while(!file.is_eof())
         std::cout << file.get_token() << std::endl;
 

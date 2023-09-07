@@ -12,6 +12,8 @@ class FileStream {
 private:
     std::ifstream file;
     std::string buffer;
+
+    std::string swap_buffer(std::string new_buffer);
 public:
     explicit FileStream(const std::string& filename);
 
