@@ -18,7 +18,7 @@ public:
     explicit FileStream(const std::string& filename);
 
     std::string peek_token() const;
-    std::string get_token();
+    std::string get_token(); // NOT CONST
 
     bool is_eof() const;
 };
