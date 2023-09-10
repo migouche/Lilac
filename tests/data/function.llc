@@ -1,4 +1,4 @@
-func plus_one (int) -> (int)
+func plus_one int -> int
 {
-    plus_one(n)=n+1
+    plus_one(n)=n+1;
 }

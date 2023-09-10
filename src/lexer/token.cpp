@@ -1,36 +1,23 @@
 //
-// Created by migouche on 9/6/2023.
+// Created by migouche on 9/10/2023.
 //
 
-#include <functional>
 #include "lexer/token.h"
-#include "typedefs.h"
 
-
-int64_t get_multi_byte_from(const std::string& token)
+Token::Token(TokenKind k, std::string s) : kind(k), value(std::move(s)) {}
+Token::Token(TokenKind k): kind(k)
 {
-    return details::i64(token.c_str(), 0);
+    value = "";
 }
 
-TokenKind get_token_kind(const std::string& token)
-{
-    return TokenKind(get_multi_byte_from(token));
+std::string Token::get_value() const {
+    return value;
 }
 
-TokenKind get_token_kind(unsigned char c)
-{
-    return TokenKind(c);
+TokenKind Token::get_token_kind() const {
+    return kind;
 }
 
-std::string get_string_from_token(TokenKind token)
-{
-    std::string out;
-    ull n = token;
-    while (n > 0)
-    {
-        out += char(n % 0x100);
-        n >>= 8;
-    }
-    std::reverse(out.begin(), out.end());
-    return out;
+bool Token::operator==(const Token &other) const {
+    return kind == other.kind && value == other.value;
 }

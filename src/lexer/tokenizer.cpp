@@ -12,7 +12,7 @@ using namespace lexer_functions;
 Tokenizer::Tokenizer(const std::string &path)
 {
     FileStream s(path);
-    tokens = std::list<std::tuple<TokenKind, std::string>>();
+    tokens = std::list<Token>();
     while(!s.is_eof()) {
         auto token = s.get_token();
         if (is_operator_token(token) || is_special_character(token))
@@ -24,10 +24,10 @@ Tokenizer::Tokenizer(const std::string &path)
     }
 }
 
-std::_List_iterator<std::tuple<TokenKind, std::string>> Tokenizer::begin() {
+std::_List_iterator<Token> Tokenizer::begin() {
     return tokens.begin();
 }
 
-std::_List_iterator<std::tuple<TokenKind, std::string>> Tokenizer::end() {
+std::_List_iterator<Token> Tokenizer::end() {
     return tokens.end();
 }

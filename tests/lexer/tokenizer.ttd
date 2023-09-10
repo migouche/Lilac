@@ -1,0 +1,38 @@
+#include <testudo/testudo_lc>
+#include "lexer/tokenizer.h"
+#include "typedefs.h"
+
+std::list<Token> get_all_tokens(Tokenizer tokenizer)
+{
+    std::list<Token> tokens;
+    for (auto token : tokenizer)
+        tokens.push_back(token);
+    return tokens;
+}
+
+define_top_test_node("lilac.lexer.tokenizer", (tokenizer, "tokenizer tests"));
+
+define_test(tokenizer, "simple tokenize script")
+{
+    declare(auto expected_tokens = std::list<Token> {
+        {KEYWORD, "func"},
+        {IDENTIFIER, "plus_one"},
+        {IDENTIFIER, "int"},
+        {get_multi_byte_token_kind("->"), ""},
+        {IDENTIFIER, "int"},
+        {OPEN_CURLEY_BRACE, ""},
+        {IDENTIFIER, "plus_one"},
+        {OPEN_PARENS, ""},
+        {IDENTIFIER, "n"},
+        {CLOSE_PARENS, ""},
+        {EQUAL, ""},
+        {IDENTIFIER, "n"},
+        {PLUS, ""},
+        {IDENTIFIER, "1"},
+        {SEMICOLON, ""},
+        {CLOSE_CURLEY_BRACE, ""},
+
+    });
+    declare(auto real_tokens = get_all_tokens(Tokenizer("tests/data/function.llc")));
+    check(real_tokens)_equal(expected_tokens);
+}

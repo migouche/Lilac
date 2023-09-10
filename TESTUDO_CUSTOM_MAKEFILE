@@ -30,13 +30,13 @@ TESTUDOBINDIR := .testudo
 OBJDIR := .object
 DEPDIR := .depend
 
-ALLTESTUDOTESTS := $(wildcard **/*.ttd)
+ALLTESTUDOTESTS := $(wildcard tests/**/*.ttd)
 ALLTESTUDOBINS  := $(ALLTESTUDOTESTS:%.ttd=$(TESTUDOBINDIR)/%.ttb)
 ALLTESTUDODEPENDS := $(ALLTESTUDOTESTS:%.ttd=$(DEPDIR)/%.td)
 ALLTESTUDOSPEC  := $(ALLTESTUDOBINS:%=%)
 
-ALLHEADERS := $(wildcard include/*.h)
-ALLSOURCES := $(wildcard src/*.cpp)
+ALLHEADERS := $(wildcard include/**/*.h)
+ALLSOURCES := $(wildcard src/**/*.cpp)
 ALLOBJECTS := $(ALLSOURCES:%.cpp=$(OBJDIR)/%.o)
 ALLDEPENDS := $(ALLSOURCES:%.cpp=$(DEPDIR)/%.d)
 

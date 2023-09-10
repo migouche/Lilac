@@ -1,0 +1,18 @@
+#include <testudo/testudo_lc>
+#include "lexer/tokenkind.h"
+
+define_top_test_node("lilac.lexer.tokenkind", (tokenkind, "testing token functions"));
+
+define_test(tokenkind, "identifier")
+{
+    check(u64(TokenKind::IDENTIFIER))_equal(1);
+}
+
+define_test(tokenkind, "multibyte")
+{
+    check(u64(TokenKind::MINUS_GREATER))_equal(0x2d3e);
+    // get enum value from string
+    check(u64(get_multi_byte_token_kind("->")))_equal(TokenKind::MINUS_GREATER);
+    // check with one char
+    check(u64(get_multi_byte_token_kind("(")))_equal(TokenKind::OPEN_PARENS);
+}

@@ -11,12 +11,13 @@
 class Tokenizer
 {
 private:
-    std::list<std::tuple<TokenKind, std::string>> tokens;
+    std::list<Token> tokens;
 public:
     explicit Tokenizer(const std::string& path);
 
-    std::_List_iterator<std::tuple<TokenKind, std::string>> begin();
-    std::_List_iterator<std::tuple<TokenKind, std::string>> end();
+
+    std::_List_iterator<Token> begin();
+    std::_List_iterator<Token> end();
 };
 
 #endif //LILAC_TOKENIZER_H

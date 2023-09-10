@@ -6,7 +6,7 @@
 #define LILAC_LEXERFUNCTIONS_H
 
 #include <string>
-#include "token.h"
+#include "tokenkind.h"
 
 namespace lexer_functions
 {
