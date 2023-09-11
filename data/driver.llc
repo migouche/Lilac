@@ -48,3 +48,8 @@ func unpack_complex complex -> real, real // I'm just making up types along the 
 {
     unpack_complex(c) = (c.real, c.imaginary);
 }
+
+func add_negative int, int -> int
+{
+    add_negative(n, m) = n + -m; // this is just for testing parsing multiple operators
+}

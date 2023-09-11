@@ -3,10 +3,10 @@
 //
 
 #include <utility>
-#include <cassert>
 #include "lexer/filestream.h"
 #include "lexer/lexerfunctions.h"
-// separators: ' ', '\n', '\t', '\r', '\n\r', '\r\n'
+#include "errors/lassert.h"
+
 using namespace lexer_functions;
 
 bool is_operator(std::ifstream& file, std::string& out_string)
@@ -87,7 +87,7 @@ std::string FileStream::get_token() {
 
         if(is_operator_character(c))
         {
-            assert(!r_token.empty());
+            lassert(!r_token.empty(), "must have read something else already");
             file.putback(c);
             break;
         }

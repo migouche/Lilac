@@ -5,7 +5,9 @@
 #ifndef LILAC_FUNCTIONDECLARATION_H
 #define LILAC_FUNCTIONDECLARATION_H
 
-class FunctionDeclaration
+#include "parser/AST/astnode.h"
+
+class FunctionDeclaration: public ASTNode
 {
 
 };

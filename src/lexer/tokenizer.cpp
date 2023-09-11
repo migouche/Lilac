@@ -24,10 +24,20 @@ Tokenizer::Tokenizer(const std::string &path)
     }
 }
 
-std::_List_iterator<Token> Tokenizer::begin() {
-    return tokens.begin();
+Token Tokenizer::get_token() {
+    if(end_of_tokens())
+        throw std::runtime_error("end of tokens");
+    auto t = peek_token();
+    index++;
+    return t;
 }
 
-std::_List_iterator<Token> Tokenizer::end() {
-    return tokens.end();
+Token Tokenizer::peek_token() const {
+    auto it = tokens.begin();
+    std::advance(it, index);
+    return *it;
+}
+
+bool Tokenizer::end_of_tokens() const {
+    return index >= tokens.size();
 }

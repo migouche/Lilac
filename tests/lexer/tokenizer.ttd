@@ -2,11 +2,13 @@
 #include "lexer/tokenizer.h"
 #include "typedefs.h"
 
-std::list<Token> get_all_tokens(Tokenizer tokenizer)
+std::list<Token> get_all_tokens(Tokenizer& tokenizer)
 {
     std::list<Token> tokens;
-    for (auto token : tokenizer)
+    while(!tokenizer.end_of_tokens()) {
+        auto token = tokenizer.get_token();
         tokens.push_back(token);
+    }
     return tokens;
 }
 
@@ -33,6 +35,68 @@ define_test(tokenizer, "simple tokenize script")
         {CLOSE_CURLEY_BRACE, ""},
 
     });
-    declare(auto real_tokens = get_all_tokens(Tokenizer("tests/data/function.llc")));
+    declare(auto t = Tokenizer("tests/data/function.llc"));
+    declare(auto real_tokens = get_all_tokens(t));
     check(real_tokens)_equal(expected_tokens);
+}
+
+define_test(tokenizer, "testing function but with get token and peek token")
+{
+    // same test but with get and peek
+    declare(auto t = Tokenizer("tests/data/function.llc"));
+    check(t.peek_token())_equal({KEYWORD, "func"});
+    check(t.get_token())_equal({KEYWORD, "func"});
+
+    check(t.peek_token())_equal(IDENTIFIER, "plus_one");
+    check(t.get_token())_equal(IDENTIFIER, "plus_one");
+
+    check(t.peek_token())_equal(IDENTIFIER, "int");
+    check(t.get_token())_equal(IDENTIFIER, "int");
+
+    check(t.peek_token())_equal({get_multi_byte_token_kind("->"), ""});
+    check(t.get_token())_equal({get_multi_byte_token_kind("->"), ""});
+
+    check(t.peek_token())_equal({IDENTIFIER, "int"});
+    check(t.get_token())_equal({IDENTIFIER, "int"});
+
+    check(t.peek_token())_equal({ OPEN_CURLEY_BRACE, "" });
+    check(t.get_token())_equal({ OPEN_CURLEY_BRACE, "" });
+
+    check(t.peek_token())_equal({IDENTIFIER, "plus_one"});
+    check(t.get_token())_equal({IDENTIFIER, "plus_one"});
+
+    check(t.peek_token())_equal({OPEN_PARENS, ""});
+    check(t.get_token())_equal({OPEN_PARENS, ""});
+
+
+    check(t.peek_token())_equal({IDENTIFIER, "n"});
+    check(t.get_token())_equal({IDENTIFIER, "n"});
+
+    check(t.peek_token())_equal({CLOSE_PARENS, ""});
+    check(t.get_token())_equal({CLOSE_PARENS, ""});
+
+    check(t.peek_token())_equal({EQUAL, ""});
+    check(t.get_token())_equal({EQUAL, ""});
+
+    check(t.peek_token())_equal({IDENTIFIER, "n"});
+    check(t.get_token())_equal({IDENTIFIER, "n"});
+
+    check(t.peek_token())_equal({PLUS, ""});
+    check(t.get_token())_equal({PLUS, ""});
+
+    check(t.peek_token())_equal({IDENTIFIER, "1"});
+    check(t.get_token())_equal({IDENTIFIER, "1"});
+
+    check(t.peek_token())_equal({SEMICOLON, ""});
+    check(t.get_token())_equal({SEMICOLON, ""});
+
+    check(t.peek_token())_equal({CLOSE_CURLEY_BRACE, ""});
+    check(t.get_token())_equal({CLOSE_CURLEY_BRACE, ""});
+
+    check(t.end_of_tokens())_true;
+}
+
+define_test(tokenizer, "opening file error")
+{
+    check_try(Tokenizer("asdf"))_catch();
 }
