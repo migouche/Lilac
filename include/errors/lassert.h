@@ -9,7 +9,7 @@
 
 #ifdef NDEBUG
 
-#  define lassert(condition, text) ((void)0)
+    #define lassert(condition, text) ((void)0)
 #else
 #  define lassert(condition, text) if (!static_cast<bool>(condition)) {\
     std::string func = __ASSERT_FUNCTION;                              \
