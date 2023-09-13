@@ -13,6 +13,8 @@ include_directories(include)
 file(GLOB HEADERS "include/**/*.h")
 file(GLOB SOURCES "src/**/*.cpp")
 
-add_executable(lilac src/main.cpp ${SOURCES} ${HEADERS})
+
+add_executable(lilac src/main.cpp ${SOURCES} ${HEADERS}
+        src/parser/AST/functiondeclaration.cpp) #:(
 
 

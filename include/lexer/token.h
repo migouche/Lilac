@@ -21,6 +21,8 @@ public:
     [[nodiscard]] TokenKind get_token_kind() const;
 
     bool operator==(const Token& other) const;
+
+    void print() const;
 };
 
 #endif //LILAC_TOKEN_H

@@ -96,11 +96,13 @@ FunctionHeader get_function_header(const std::unique_ptr<Tokenizer>& tokenizer)
     return {name, domain, codomain};
 }
 
+/*
 struct FunctionCase
 {
     std::list<Token> inputs;
     std::list<Token> outputs; // TODO: must be an function call, for once functional programming saves us
 };
+*/
 
 struct FunctionBody
 {
@@ -150,11 +152,16 @@ FunctionBody parse_function_body(const std::unique_ptr<Tokenizer>& tokenizer)
     }
 }
 
+FunctionDeclaration get_function_from_parts(const FunctionHeader& h, const FunctionBody& b)
+{
+    return {h.name, h.domain, h.codomain, b.cases};
+}
+
 FunctionDeclaration Parser::parse_function() {
     auto header = get_function_header(tokenizer);
     expect(tokenizer->get_token() == Token(TokenKind('{')), "function must have a body");
     auto body = parse_function_body(tokenizer);
-    return {header, body};
+    return get_function_from_parts(header, body);
 }
 
 ASTTree Parser::get_tree() {
