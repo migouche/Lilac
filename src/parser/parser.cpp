@@ -4,7 +4,7 @@
 
 #include "parser/parser.h"
 
-void __l_fail(std::string message)
+void __l_fail(const std::string& message)
 {
     std::string out = "expect failed: ";
     out.append(message);
@@ -112,6 +112,32 @@ FunctionCase parse_function_case(const std::unique_ptr<Tokenizer>& tokenizer)
     expect(tokenizer->get_token().get_token_kind() == IDENTIFIER &&
            tokenizer->get_token() == Token(TokenKind('(')), // no beef inferring for now :(
            "function case must start with a function 'definition'");
+    expect(tokenizer->peek_token().get_token_kind() == IDENTIFIER, "function case must have at least one input");
+
+    std::list<Token> inputs = {};
+
+    while(tokenizer->peek_token().get_token_kind() == IDENTIFIER)
+    {
+        expect(tokenizer->peek_token().get_token_kind() == IDENTIFIER, "argument must be an identifier");
+        inputs.push_back(tokenizer->get_token());
+        if(tokenizer->peek_token() == Token(TokenKind(')')))
+        {
+            tokenizer->get_token();
+            break;
+        }
+        expect(tokenizer->get_token() == Token(TokenKind(',')), "Function domain must be comma-separated");
+    }
+
+    expect(tokenizer->get_token() == Token(TokenKind('=')), "function case must be assigned to something");
+
+    std::list<Token> operation = {};
+
+    while(tokenizer->peek_token() != Token(TokenKind(';')))
+    {
+        operation.push_back(tokenizer->get_token());
+    }
+    tokenizer->get_token(); // consume ';'
+    return {inputs, operation};
 }
 
 FunctionBody parse_function_body(const std::unique_ptr<Tokenizer>& tokenizer)
@@ -128,8 +154,13 @@ FunctionDeclaration Parser::parse_function() {
     auto header = get_function_header(tokenizer);
     expect(tokenizer->get_token() == Token(TokenKind('{')), "function must have a body");
     auto body = parse_function_body(tokenizer);
+    return {header, body};
 }
 
 ASTTree Parser::get_tree() {
- return {};
+    while(!tokenizer->end_of_tokens())
+    {
+        if(tokenizer->peek_token() == Token(TokenKind(1), "func"))
+            parse_function();
+    }
 }

@@ -9,6 +9,11 @@
 
 class FunctionDeclaration: public ASTNode
 {
+private:
+    std::string name;
+    std::list<Token> domain;
+    std::list<Token> codomain;
+    std::list
 
 };
 
