@@ -6,7 +6,7 @@
 #define LILAC_TOKENKIND_H
 
 #include "typedefs.h"
-
+gti
 #define get_multi_byte_token_kind(token) TokenKind( token##_u64 )
 
 

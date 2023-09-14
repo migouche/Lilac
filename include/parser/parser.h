@@ -14,7 +14,7 @@ class Parser
 {
 private:
     std::unique_ptr<Tokenizer> tokenizer;
-    FunctionDeclaration parse_function();
+    std::shared_ptr<FunctionDeclaration> parse_function();
 public:
     explicit Parser(const std::string&);
     ASTTree get_tree();

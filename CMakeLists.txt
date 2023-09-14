@@ -15,6 +15,8 @@ file(GLOB SOURCES "src/**/*.cpp")
 
 
 add_executable(lilac src/main.cpp ${SOURCES} ${HEADERS}
-        src/parser/AST/functiondeclaration.cpp) #:(
+        src/parser/AST/functiondeclaration.cpp
+        src/parser/AST/astnode.cpp
+        src/parser/AST/asttree.cpp) #:(
 
 

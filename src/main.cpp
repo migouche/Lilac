@@ -8,7 +8,9 @@
 int main() {
     Parser parser("tests/data/function.llc");
 
-    parser.
+    auto tree = parser.get_tree();
+
+    tree.print();
 
     return 0;
 

@@ -2,24 +2,23 @@
 // Created by migouche on 9/10/2023.
 //
 
+#include <iostream>
 #include "parser/parser.h"
 
-void __l_fail(const std::string& message)
+void __l_fail(const std::string& message, int line)
 {
-    std::string out = "expect failed: ";
+    std::string out = "expect failed at ";
+    out.append(__FILE__);
+    out.append(":");
+    out.append(std::to_string(line));
+    out.append("\n\t");
     out.append(message);
     throw std::runtime_error(out);
 }
 
-#define expect(condition, message) static_cast<bool>(condition) ? void(0) : __l_fail(message)
+#define expect(condition, message) static_cast<bool>(condition) ? void(0) : __l_fail(message, __LINE__)
 
 
-/* copy just in case
-#define expect(condition, message) if (!static_cast<bool>(condition)) { \
-    std::string out = "expect failed: ";                                        \
-    out.append(message);                                                         \
-    throw std::runtime_error(out);} else {(void)0;}\
-    */
 Parser::Parser(const std::string &path) {
     tokenizer = std::make_unique<Tokenizer>(path);
 }
@@ -33,7 +32,8 @@ struct FunctionHeader
 
 FunctionHeader get_function_header(const std::unique_ptr<Tokenizer>& tokenizer)
 {
-    expect(tokenizer->get_token() == Token(TokenKind(1), "func"), "function parsing must start by 'func'");
+
+    expect(tokenizer->get_token() == Token(KEYWORD, "func"), "function parsing must start by 'func'");
 
     bool domain_parens = false;
     bool codomain_parens = false;
@@ -55,6 +55,9 @@ FunctionHeader get_function_header(const std::unique_ptr<Tokenizer>& tokenizer)
     while(tokenizer->peek_token().get_token_kind() == IDENTIFIER)
     {
         domain.push_back(tokenizer->get_token());
+
+        if(tokenizer->peek_token().get_token_kind() == get_multi_byte_token_kind("->"))
+            break;
         if(domain_parens && tokenizer->peek_token() == Token(TokenKind(')')))
         {
             tokenizer->get_token();
@@ -81,12 +84,14 @@ FunctionHeader get_function_header(const std::unique_ptr<Tokenizer>& tokenizer)
     while(tokenizer->peek_token().get_token_kind() == IDENTIFIER)
     {
         codomain.push_back(tokenizer->get_token());
+        if(tokenizer->peek_token().get_token_kind() == TokenKind('{'))
+            break;
         if(codomain_parens && tokenizer->peek_token() == Token(TokenKind(')')))
         {
             tokenizer->get_token();
             break;
         }
-        expect(tokenizer->get_token() == Token(TokenKind(',')), "Function domain must be comma-separated");
+        expect(tokenizer->get_token() == Token(TokenKind(',')), "Function codomain must be comma-separated");
     }
 
 
@@ -144,30 +149,35 @@ FunctionCase parse_function_case(const std::unique_ptr<Tokenizer>& tokenizer)
 
 FunctionBody parse_function_body(const std::unique_ptr<Tokenizer>& tokenizer)
 {
-    expect(tokenizer->get_token() == Token(TokenKind('{')), "function must have a body");
+    expect(tokenizer->get_token() == Token(TokenKind('{')), "function must have a body, got");
     std::list<FunctionCase> cases = {};
     while(tokenizer->peek_token() != Token(TokenKind('}')))
     {
         cases.push_back(parse_function_case(tokenizer));
     }
+    return {cases};
 }
 
-FunctionDeclaration get_function_from_parts(const FunctionHeader& h, const FunctionBody& b)
+std::shared_ptr<FunctionDeclaration> get_function_from_parts(const FunctionHeader& h, const FunctionBody& b)
 {
-    return {h.name, h.domain, h.codomain, b.cases};
+    return std::make_shared<FunctionDeclaration>(h.name, h.domain, h.codomain, b.cases);
 }
 
-FunctionDeclaration Parser::parse_function() {
+std::shared_ptr<FunctionDeclaration> Parser::parse_function() {
     auto header = get_function_header(tokenizer);
-    expect(tokenizer->get_token() == Token(TokenKind('{')), "function must have a body");
     auto body = parse_function_body(tokenizer);
     return get_function_from_parts(header, body);
 }
 
 ASTTree Parser::get_tree() {
+    ASTTree tree = ASTTree();
     while(!tokenizer->end_of_tokens())
     {
-        if(tokenizer->peek_token() == Token(TokenKind(1), "func"))
-            parse_function();
+        if(tokenizer->peek_token() == Token(KEYWORD, "func"))
+            tree.add_child(parse_function());
+        else
+            tokenizer->get_token();
     }
+
+    return tree;
 }

@@ -26,7 +26,7 @@ private:
     std::list<FunctionCase> cases;
 public:
     FunctionDeclaration(std::string , std::list<Token>, std::list<Token>, std::list<FunctionCase>);
-    void print() const;
+    void print() const override;
 
 };
 
