@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.01)
+cmake_minimum_required(VERSION 3.11.0)
 
 project(Lilac)
 
@@ -10,13 +10,7 @@ endif ()
 
 include_directories(include)
 
-file(GLOB HEADERS "include/**/*.h")
-file(GLOB SOURCES "src/**/*.cpp")
+file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS src/*.cpp include/*.h)
 
 
-add_executable(lilac src/main.cpp ${SOURCES} ${HEADERS}
-        src/parser/AST/functiondeclaration.cpp
-        src/parser/AST/astnode.cpp
-        src/parser/AST/asttree.cpp) #:(
-
-
+add_executable(lilac src/main.cpp ${SOURCE_FILES})
