@@ -25,4 +25,6 @@ public:
     void print() const;
 };
 
+std::ostream &operator<<(std::ostream &os, const Token& t);
+
 #endif //LILAC_TOKEN_H

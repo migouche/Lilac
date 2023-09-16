@@ -68,3 +68,7 @@ bool lexer_functions::is_operator_character(char c)
     return c == '+' || c == '-' || c == '*' || c == '/' || c == '%' || c == '>' || c == '<' || c == '=' || c == '!' ||
     c == '&' || c == '|' || c == '^' || c == '~';
 }
+
+bool lexer_functions::is_end_of_operator(char c) {
+    return c == '=';
+}

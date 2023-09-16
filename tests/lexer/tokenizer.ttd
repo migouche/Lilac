@@ -16,23 +16,26 @@ define_top_test_node("lilac.lexer.tokenizer", (tokenizer, "tokenizer tests"));
 
 define_test(tokenizer, "simple tokenize script")
 {
-    declare(auto expected_tokens = std::list<Token> {
-        {KEYWORD, "func"},
-        {IDENTIFIER, "plus_one"},
-        {IDENTIFIER, "int"},
-        {get_multi_byte_token_kind("->"), ""},
-        {IDENTIFIER, "int"},
-        {OPEN_CURLEY_BRACE, ""},
-        {IDENTIFIER, "plus_one"},
-        {OPEN_PARENS, ""},
-        {IDENTIFIER, "n"},
-        {CLOSE_PARENS, ""},
-        {EQUAL, ""},
-        {IDENTIFIER, "n"},
-        {PLUS, ""},
-        {IDENTIFIER, "1"},
-        {SEMICOLON, ""},
-        {CLOSE_CURLEY_BRACE, ""},
+    declare(std::list<Token> expected_tokens = {
+        Token(KEYWORD, "func"),
+        Token(IDENTIFIER, "plus_one"),
+        Token(IDENTIFIER, "int"),
+        Token(get_multi_byte_token_kind("->")),
+        Token(IDENTIFIER, "int"),
+        Token(OPEN_CURLEY_BRACE),
+        Token(IDENTIFIER, "plus_one"),
+        Token(OPEN_PARENS),
+        Token(IDENTIFIER, "n"),
+        Token(CLOSE_PARENS),
+        Token(EQUAL),
+        Token(PLUS),
+        Token(OPEN_PARENS),
+        Token(IDENTIFIER, "n"),
+        Token(COMMA),
+        Token(IDENTIFIER, "1"),
+        Token(CLOSE_PARENS),
+        Token(SEMICOLON),
+        Token(CLOSE_CURLEY_BRACE)
 
     });
     declare(auto t = Tokenizer("tests/data/function.llc"));
@@ -44,8 +47,8 @@ define_test(tokenizer, "testing function but with get token and peek token")
 {
     // same test but with get and peek
     declare(auto t = Tokenizer("tests/data/function.llc"));
-    check(t.peek_token())_equal({KEYWORD, "func"});
-    check(t.get_token())_equal({KEYWORD, "func"});
+    check(t.peek_token())_equal(Token(KEYWORD, "func"));
+    check(t.get_token())_equal(Token(KEYWORD, "func"));
 
     check(t.peek_token())_equal(IDENTIFIER, "plus_one");
     check(t.get_token())_equal(IDENTIFIER, "plus_one");
@@ -53,45 +56,54 @@ define_test(tokenizer, "testing function but with get token and peek token")
     check(t.peek_token())_equal(IDENTIFIER, "int");
     check(t.get_token())_equal(IDENTIFIER, "int");
 
-    check(t.peek_token())_equal({get_multi_byte_token_kind("->"), ""});
-    check(t.get_token())_equal({get_multi_byte_token_kind("->"), ""});
+    check(t.peek_token())_equal(Token(get_multi_byte_token_kind("->")));
+    check(t.get_token())_equal(Token(get_multi_byte_token_kind("->")));
 
-    check(t.peek_token())_equal({IDENTIFIER, "int"});
-    check(t.get_token())_equal({IDENTIFIER, "int"});
+    check(t.peek_token())_equal(Token(IDENTIFIER, "int"));
+    check(t.get_token())_equal(Token(IDENTIFIER, "int"));
 
-    check(t.peek_token())_equal({ OPEN_CURLEY_BRACE, "" });
-    check(t.get_token())_equal({ OPEN_CURLEY_BRACE, "" });
+    check(t.peek_token())_equal(Token(OPEN_CURLEY_BRACE));
+    check(t.get_token())_equal(Token(OPEN_CURLEY_BRACE));
 
-    check(t.peek_token())_equal({IDENTIFIER, "plus_one"});
-    check(t.get_token())_equal({IDENTIFIER, "plus_one"});
+    check(t.peek_token())_equal(Token(IDENTIFIER, "plus_one"));
+    check(t.get_token())_equal(Token(IDENTIFIER, "plus_one"));
 
-    check(t.peek_token())_equal({OPEN_PARENS, ""});
-    check(t.get_token())_equal({OPEN_PARENS, ""});
+    check(t.peek_token())_equal(Token(OPEN_PARENS));
+    check(t.get_token())_equal(Token(OPEN_PARENS));
 
 
-    check(t.peek_token())_equal({IDENTIFIER, "n"});
-    check(t.get_token())_equal({IDENTIFIER, "n"});
+    check(t.peek_token())_equal(Token(IDENTIFIER, "n"));
+    check(t.get_token())_equal(Token(IDENTIFIER, "n"));
 
-    check(t.peek_token())_equal({CLOSE_PARENS, ""});
-    check(t.get_token())_equal({CLOSE_PARENS, ""});
+    check(t.peek_token())_equal(Token(CLOSE_PARENS));
+    check(t.get_token())_equal(Token(CLOSE_PARENS));
 
-    check(t.peek_token())_equal({EQUAL, ""});
-    check(t.get_token())_equal({EQUAL, ""});
+    check(t.peek_token())_equal(Token(EQUAL));
+    check(t.get_token())_equal(Token(EQUAL));
 
-    check(t.peek_token())_equal({IDENTIFIER, "n"});
-    check(t.get_token())_equal({IDENTIFIER, "n"});
+    check(t.peek_token())_equal(Token(PLUS));
+    check(t.get_token())_equal(Token(PLUS));
 
-    check(t.peek_token())_equal({PLUS, ""});
-    check(t.get_token())_equal({PLUS, ""});
+    check(t.peek_token())_equal(Token(OPEN_PARENS));
+    check(t.get_token())_equal(Token(OPEN_PARENS));
 
-    check(t.peek_token())_equal({IDENTIFIER, "1"});
-    check(t.get_token())_equal({IDENTIFIER, "1"});
+    check(t.peek_token())_equal(Token(IDENTIFIER, "n"));
+    check(t.get_token())_equal(Token(IDENTIFIER, "n"));
 
-    check(t.peek_token())_equal({SEMICOLON, ""});
-    check(t.get_token())_equal({SEMICOLON, ""});
+    check(t.peek_token())_equal(Token(COMMA));
+    check(t.get_token())_equal(Token(COMMA));
 
-    check(t.peek_token())_equal({CLOSE_CURLEY_BRACE, ""});
-    check(t.get_token())_equal({CLOSE_CURLEY_BRACE, ""});
+    check(t.peek_token())_equal(Token(IDENTIFIER, "1"));
+    check(t.get_token())_equal(Token(IDENTIFIER, "1"));
+
+    check(t.peek_token())_equal(Token(CLOSE_PARENS));
+    check(t.get_token())_equal(Token(CLOSE_PARENS));
+
+    check(t.peek_token())_equal(Token(SEMICOLON));
+    check(t.get_token())_equal(Token(SEMICOLON));
+
+    check(t.peek_token())_equal(Token(CLOSE_CURLEY_BRACE));
+    check(t.get_token())_equal(Token(CLOSE_CURLEY_BRACE));
 
     check(t.end_of_tokens())_true;
 }

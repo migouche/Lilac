@@ -42,7 +42,7 @@ FunctionHeader get_function_header(const std::unique_ptr<Tokenizer>& tokenizer)
     expect(tokenizer->peek_token().get_token_kind() == IDENTIFIER, "function name must be an identifier");
     std::string name = tokenizer->get_token().get_value();
 
-    if(tokenizer->peek_token() == Token(TokenKind('(')))
+    if(tokenizer->peek_token().get_token_kind() == CLOSE_PARENS)
     {
         domain_parens = true;
         tokenizer->get_token();
@@ -58,18 +58,19 @@ FunctionHeader get_function_header(const std::unique_ptr<Tokenizer>& tokenizer)
 
         if(tokenizer->peek_token().get_token_kind() == get_multi_byte_token_kind("->"))
             break;
-        if(domain_parens && tokenizer->peek_token() == Token(TokenKind(')')))
+        if(domain_parens && tokenizer->peek_token().get_token_kind() == CLOSE_PARENS)
         {
             tokenizer->get_token();
             break;
         }
-        expect(tokenizer->get_token() == Token(TokenKind(',')), "Function domain must be comma-separated");
+        expect(tokenizer->get_token().get_token_kind() == COMMA, "Function domain must be comma-separated");
     }
 
     if(domain_parens) // NOTE: still needed (ik there is a lot of redundant code, will fix later)
-        expect(tokenizer->get_token() == Token(TokenKind(')')), "no matching parenthesis");
+        expect(tokenizer->get_token().get_token_kind() == CLOSE_PARENS, "no matching parenthesis");
 
-    expect(tokenizer->get_token() == Token(get_multi_byte_token_kind("->")), "expected '->' to introduce return type");
+    expect(tokenizer->get_token().get_token_kind() == get_multi_byte_token_kind("->"),
+           "expected '->' to introduce return type");
 
     if(tokenizer->peek_token() == Token(TokenKind('(')))
     {
@@ -84,19 +85,19 @@ FunctionHeader get_function_header(const std::unique_ptr<Tokenizer>& tokenizer)
     while(tokenizer->peek_token().get_token_kind() == IDENTIFIER)
     {
         codomain.push_back(tokenizer->get_token());
-        if(tokenizer->peek_token().get_token_kind() == TokenKind('{'))
+        if(tokenizer->peek_token().get_token_kind() == OPEN_CURLEY_BRACE)
             break;
-        if(codomain_parens && tokenizer->peek_token() == Token(TokenKind(')')))
+        if(codomain_parens && tokenizer->peek_token().get_token_kind() == CLOSE_PARENS)
         {
             tokenizer->get_token();
             break;
         }
-        expect(tokenizer->get_token() == Token(TokenKind(',')), "Function codomain must be comma-separated");
+        expect(tokenizer->get_token().get_token_kind() == COMMA, "Function codomain must be comma-separated");
     }
 
 
     if(codomain_parens)
-        expect(tokenizer->get_token() == Token(TokenKind(')')), "no matching parenthesis");
+        expect(tokenizer->get_token().get_token_kind() == CLOSE_PARENS, "no matching parenthesis");
 
     return {name, domain, codomain};
 }
@@ -117,7 +118,7 @@ struct FunctionBody
 FunctionCase parse_function_case(const std::unique_ptr<Tokenizer>& tokenizer)
 {
     expect(tokenizer->get_token().get_token_kind() == IDENTIFIER &&
-           tokenizer->get_token() == Token(TokenKind('(')), // no beef inferring for now :(
+           tokenizer->get_token().get_token_kind() == OPEN_PARENS, // no beef inferring for now :(
            "function case must start with a function 'definition'");
     expect(tokenizer->peek_token().get_token_kind() == IDENTIFIER, "function case must have at least one input");
 
@@ -127,19 +128,19 @@ FunctionCase parse_function_case(const std::unique_ptr<Tokenizer>& tokenizer)
     {
         expect(tokenizer->peek_token().get_token_kind() == IDENTIFIER, "argument must be an identifier");
         inputs.push_back(tokenizer->get_token());
-        if(tokenizer->peek_token() == Token(TokenKind(')')))
+        if(tokenizer->peek_token().get_token_kind() == CLOSE_PARENS)
         {
             tokenizer->get_token();
             break;
         }
-        expect(tokenizer->get_token() == Token(TokenKind(',')), "Function domain must be comma-separated");
+        expect(tokenizer->get_token().get_token_kind() == COMMA, "Function domain must be comma-separated");
     }
 
-    expect(tokenizer->get_token() == Token(TokenKind('=')), "function case must be assigned to something");
+    expect(tokenizer->get_token().get_token_kind() == EQUAL, "function case must be assigned to something");
 
     std::list<Token> operation = {};
 
-    while(tokenizer->peek_token() != Token(TokenKind(';')))
+    while(tokenizer->peek_token().get_token_kind() != SEMICOLON)
     {
         operation.push_back(tokenizer->get_token());
     }
@@ -149,9 +150,9 @@ FunctionCase parse_function_case(const std::unique_ptr<Tokenizer>& tokenizer)
 
 FunctionBody parse_function_body(const std::unique_ptr<Tokenizer>& tokenizer)
 {
-    expect(tokenizer->get_token() == Token(TokenKind('{')), "function must have a body, got");
+    expect(tokenizer->get_token().get_token_kind() == OPEN_CURLEY_BRACE, "function must have a body, got");
     std::list<FunctionCase> cases = {};
-    while(tokenizer->peek_token() != Token(TokenKind('}')))
+    while(tokenizer->peek_token().get_token_kind() != CLOSE_CURLEY_BRACE)
     {
         cases.push_back(parse_function_case(tokenizer));
     }

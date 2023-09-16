@@ -29,3 +29,13 @@ void Token::print() const {
     else
         std::cout << get_string_from_token(kind);
 }
+
+std::ostream &operator<<(std::ostream &os, const Token& t) {
+    if(t.get_token_kind() == IDENTIFIER)
+        return os << "IDENTIFIER: " << t.get_value();
+    if(t.get_token_kind() == KEYWORD)
+        return os << "KEYWORD: " << t.get_value();
+    return os << "'" <<get_string_from_token(t.get_token_kind()) << "'";
+}
+
+

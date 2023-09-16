@@ -21,6 +21,7 @@ namespace lexer_functions
     bool is_special_character(char c);
     bool is_special_character(const std::string&);
     bool is_operator_character(char c);
+    bool is_end_of_operator(char c);
 }
 
 #endif //LILAC_LEXERFUNCTIONS_H

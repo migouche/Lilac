@@ -19,6 +19,13 @@ bool is_operator(std::ifstream& file, std::string& out_string)
     {
         char c;
         file.get(c);
+        if(is_end_of_operator(c))
+        {
+            r += c;
+            out_string = r;
+            return true;
+        }
+
         if(c == '/' && file.peek() == '/')
         {
             file.putback('/');
