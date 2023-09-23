@@ -4,11 +4,12 @@
 
 #include <iostream>
 #include "parser/parser.h"
+#include "parser/AST/expression.h"
 
-void __l_fail(const std::string& message, int line)
+void __l_fail(const std::string& message, std::string file, int line)
 {
     std::string out = "expect failed at ";
-    out.append(__FILE__);
+    out.append(file);
     out.append(":");
     out.append(std::to_string(line));
     out.append("\n\t");
@@ -16,7 +17,7 @@ void __l_fail(const std::string& message, int line)
     throw std::runtime_error(out);
 }
 
-#define expect(condition, message) static_cast<bool>(condition) ? void(0) : __l_fail(message, __LINE__)
+#define expect(condition, message) static_cast<bool>(condition) ? void(0) : __l_fail(message,__FILE__, __LINE__)
 
 
 Parser::Parser(const std::string &path) {
@@ -115,6 +116,36 @@ struct FunctionBody
     std::list<FunctionCase> cases;
 };
 
+std::shared_ptr<ASTValue> parse_value(const std::unique_ptr<Tokenizer>& tokenizer)
+{
+    auto tok = tokenizer->get_token();
+    expect(tok.get_token_kind() == IDENTIFIER || tok.is_primitive_operation(),
+           "function name / expression must be an identifier");
+    std::string name;
+    if(tok.get_token_kind() == IDENTIFIER)
+        name = tok.get_value();
+    else
+        name = get_string_from_token(tok.get_token_kind());
+    if (tokenizer->peek_token().get_token_kind() == OPEN_PARENS) {
+        // function
+        tokenizer->get_token();// consume the (
+        std::list<std::shared_ptr<ASTValue>> arguments = {};
+        while (tokenizer->peek_token().get_token_kind() != OPEN_PARENS)
+        {
+            arguments.push_back(parse_value(tokenizer));
+            if(tokenizer->peek_token().get_token_kind() == COMMA)
+                tokenizer->get_token();
+            else
+                expect(tokenizer->peek_token().get_token_kind() == CLOSE_PARENS,
+                       "expected comma or ')' to end function call");
+        }
+        tokenizer->get_token(); // consume the )
+        return std::make_shared<FunctionCall>(name, arguments);
+    } else {
+        return std::make_shared<Expression>(tok);
+    }
+}
+
 FunctionCase parse_function_case(const std::unique_ptr<Tokenizer>& tokenizer)
 {
     expect(tokenizer->get_token().get_token_kind() == IDENTIFIER &&
@@ -138,14 +169,12 @@ FunctionCase parse_function_case(const std::unique_ptr<Tokenizer>& tokenizer)
 
     expect(tokenizer->get_token().get_token_kind() == EQUAL, "function case must be assigned to something");
 
-    std::list<Token> operation = {};
+    //std::list<Token> operation = {};
 
-    while(tokenizer->peek_token().get_token_kind() != SEMICOLON)
-    {
-        operation.push_back(tokenizer->get_token());
-    }
+    auto _return = parse_value(tokenizer);
+
     tokenizer->get_token(); // consume ';'
-    return {inputs, operation};
+    return {inputs, _return};
 }
 
 FunctionBody parse_function_body(const std::unique_ptr<Tokenizer>& tokenizer)

@@ -30,6 +30,13 @@ void Token::print() const {
         std::cout << get_string_from_token(kind);
 }
 
+bool Token::is_primitive_operation() const {
+    if(!value.empty())
+        return false;
+    return kind == PLUS || kind == MINUS || kind == STAR || kind == SLASH || kind == EQUAL_EQUAL || kind == LESS ||
+    kind == GREATER || kind == LESS_EQUAL || kind == GREATER_EQUAL;
+}
+
 std::ostream &operator<<(std::ostream &os, const Token& t) {
     if(t.get_token_kind() == IDENTIFIER)
         return os << "IDENTIFIER: " << t.get_value();

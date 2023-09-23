@@ -19,6 +19,7 @@ public:
 
     [[nodiscard]] std::string get_value() const;
     [[nodiscard]] TokenKind get_token_kind() const;
+    [[nodiscard]] bool is_primitive_operation() const;
 
     bool operator==(const Token& other) const;
 

@@ -8,11 +8,13 @@
 #include <list>
 #include "parser/AST/astnode.h"
 #include "lexer/token.h"
+#include "parser/AST/astvalue.h"
 
 struct FunctionCase
 {
     std::list<Token> inputs;
-    std::list<Token> outputs; // TODO: must be an function call, for once functional programming saves us
+    //&std::list<Token> outputs; // TODO: must be an function call, for once functional programming saves us
+    std::shared_ptr<ASTValue> output;
 
     void print() const;
 };

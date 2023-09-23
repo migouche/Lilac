@@ -42,10 +42,6 @@ void FunctionCase::print() const {
 
     std::cout << "\n\toutput: ";
 
-    for (const auto& output: outputs)
-    {
-        output.print();
-        std::cout << " ";
-    }
+    output->print();
     std::cout << std::endl;
 }
