@@ -6,7 +6,7 @@
 #include "parser/parser.h"
 #include "parser/AST/expression.h"
 
-void __l_fail(const std::string& message, std::string file, int line)
+void __l_fail(const std::string& message, const std::string& file, int line)
 {
     std::string out = "expect failed at ";
     out.append(file);
@@ -129,8 +129,8 @@ std::shared_ptr<ASTValue> parse_value(const std::unique_ptr<Tokenizer>& tokenize
     if (tokenizer->peek_token().get_token_kind() == OPEN_PARENS) {
         // function
         tokenizer->get_token();// consume the (
-        std::list<std::shared_ptr<ASTValue>> arguments = {};
-        while (tokenizer->peek_token().get_token_kind() != OPEN_PARENS)
+        std::list<std::shared_ptr<ASTNode>> arguments = {};
+        while (tokenizer->peek_token().get_token_kind() != CLOSE_PARENS)
         {
             arguments.push_back(parse_value(tokenizer));
             if(tokenizer->peek_token().get_token_kind() == COMMA)

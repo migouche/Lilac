@@ -9,8 +9,9 @@
 
 class FunctionCall: public ASTValue
 {
+private:
     std::string name;
-
+public:
     FunctionCall(std::string name, std::list<std::shared_ptr<ASTNode>> arguments);
 
     void print() const override;

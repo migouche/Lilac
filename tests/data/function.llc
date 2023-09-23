@@ -1,4 +1,4 @@
-func plus_one int -> int
+func average float, float -> float
 {
-    plus_one(n)=+(n, 1);
+    average(n, m) = /(+(n, m), 2);
 }
