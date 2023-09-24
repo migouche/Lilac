@@ -4,7 +4,8 @@
 
 #include <iostream>
 #include "parser/parser.h"
-#include "parser/AST/expression.h"
+#include "parser/AST/ASTValues/expression.h"
+#include "parser/AST/ASTValues/tuple.h"
 
 void __l_fail(const std::string& message, const std::string& file, int line)
 {
@@ -20,9 +21,7 @@ void __l_fail(const std::string& message, const std::string& file, int line)
 #define expect(condition, message) static_cast<bool>(condition) ? void(0) : __l_fail(message,__FILE__, __LINE__)
 
 
-Parser::Parser(const std::string &path) {
-    tokenizer = std::make_unique<Tokenizer>(path);
-}
+Parser::Parser(const std::string &path): tokenizer(std::make_unique<Tokenizer>(path)) {}
 
 struct FunctionHeader
 {
@@ -103,37 +102,54 @@ FunctionHeader get_function_header(const std::unique_ptr<Tokenizer>& tokenizer)
     return {name, domain, codomain};
 }
 
-/*
-struct FunctionCase
-{
-    std::list<Token> inputs;
-    std::list<Token> outputs; // TODO: must be an function call, for once functional programming saves us
-};
-*/
 
 struct FunctionBody
 {
     std::list<FunctionCase> cases;
 };
 
+std::shared_ptr<ASTValue> parse_value(const std::unique_ptr<Tokenizer>& tokenizer);
+
+std::shared_ptr<Tuple> parse_tuple(const std::unique_ptr<Tokenizer>& tokenizer)
+{
+    expect(tokenizer->peek_token().get_token_kind() == OPEN_SQUARE_BRACE, "expected '[' on parsing tuple");
+    tokenizer->get_token(); // consume the '['
+    std::list<std::shared_ptr<ASTNode>> elements;
+    while(tokenizer->peek_token().get_token_kind() != CLOSE_SQUARE_BRACE)
+    {
+        elements.push_back(parse_value(tokenizer));
+        if(tokenizer->peek_token().get_token_kind() == COMMA)
+            tokenizer->get_token(); // consume the comma;
+        else
+            expect(tokenizer->peek_token().get_token_kind() == CLOSE_SQUARE_BRACE, "no matching ']'");
+
+    }
+    tokenizer->get_token(); // consume ']'
+    return std::make_shared<Tuple>(elements);
+}
+
 std::shared_ptr<ASTValue> parse_value(const std::unique_ptr<Tokenizer>& tokenizer)
 {
+    if(tokenizer->peek_token().get_token_kind() == OPEN_SQUARE_BRACE)
+        return parse_tuple(tokenizer);
+
     auto tok = tokenizer->get_token();
+
     expect(tok.get_token_kind() == IDENTIFIER || tok.is_primitive_operation(),
            "function name / expression must be an identifier");
+    expect(tok.get_token_kind() != TokenKind(']'), "unexpected ']'");
     std::string name;
     if(tok.get_token_kind() == IDENTIFIER)
         name = tok.get_value();
     else
         name = get_string_from_token(tok.get_token_kind());
-    if (tokenizer->peek_token().get_token_kind() == OPEN_PARENS) {
+    if (tokenizer->peek_token().get_token_kind() == OPEN_PARENS) { // TODO: move this to parse_function_call
         // function
         tokenizer->get_token();// consume the (
         std::list<std::shared_ptr<ASTNode>> arguments = {};
-        while (tokenizer->peek_token().get_token_kind() != CLOSE_PARENS)
-        {
+        while (tokenizer->peek_token().get_token_kind() != CLOSE_PARENS) {
             arguments.push_back(parse_value(tokenizer));
-            if(tokenizer->peek_token().get_token_kind() == COMMA)
+            if (tokenizer->peek_token().get_token_kind() == COMMA)
                 tokenizer->get_token();
             else
                 expect(tokenizer->peek_token().get_token_kind() == CLOSE_PARENS,
@@ -141,10 +157,14 @@ std::shared_ptr<ASTValue> parse_value(const std::unique_ptr<Tokenizer>& tokenize
         }
         tokenizer->get_token(); // consume the )
         return std::make_shared<FunctionCall>(name, arguments);
-    } else {
+    }
+    else
+    {
         return std::make_shared<Expression>(tok);
     }
 }
+
+
 
 FunctionCase parse_function_case(const std::unique_ptr<Tokenizer>& tokenizer)
 {
@@ -173,7 +193,8 @@ FunctionCase parse_function_case(const std::unique_ptr<Tokenizer>& tokenizer)
 
     auto _return = parse_value(tokenizer);
 
-    tokenizer->get_token(); // consume ';'
+    auto tok = tokenizer->get_token();
+    expect(tok.get_token_kind() == SEMICOLON, "expected semicolon, got " + get_string_from_token(tok.get_token_kind()) + tok.get_value());
     return {inputs, _return};
 }
 

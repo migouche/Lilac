@@ -1,0 +1,4 @@
+func unpack_complex complex -> float, float
+{
+    unpack_complex(c) = [get_real(c), get_imaginary(c)];
+}

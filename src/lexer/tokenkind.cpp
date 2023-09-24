@@ -4,10 +4,9 @@
 
 #include <functional>
 #include "lexer/tokenkind.h"
-#include "typedefs.h"
 
 
-int64_t get_multi_byte_from(const std::string& token)
+u64 get_multi_byte_from(const std::string& token)
 {
     return details::string_to_u64(token.c_str(), 0);
 }
@@ -34,3 +33,4 @@ std::string get_string_from_token(TokenKind token)
     std::reverse(out.begin(), out.end());
     return out;
 }
+
