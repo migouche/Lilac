@@ -124,11 +124,36 @@ std::shared_ptr<Tuple> parse_tuple(const std::unique_ptr<Tokenizer>& tokenizer)
             expect(tokenizer->peek_token().get_token_kind() == CLOSE_SQUARE_BRACE, "no matching ']'");
 
     }
-    tokenizer->get_token(); // consume ']'
+    expect(tokenizer->get_token().get_token_kind() == CLOSE_SQUARE_BRACE, "expected ']'");
     return std::make_shared<Tuple>(elements);
 }
 
+std::shared_ptr<FunctionCall> parse_function_call(const std::unique_ptr<Tokenizer>& tokenizer)
+{
+    auto t = tokenizer->get_token();
+    expect(t.get_token_kind() == IDENTIFIER || t.is_primitive_operation(), "expected function name as identifier");
+    expect(t.get_token_kind() == OPEN_PARENS, "expected function parens");
+    auto name = t.get_token_kind() == IDENTIFIER ? t.get_value(): get_string_from_token(t.get_token_kind());
+    std::list<std::shared_ptr<ASTNode>> arguments = {};
+    while(tokenizer->peek_token().get_token_kind() != CLOSE_PARENS)
+    {
+        arguments.push_back(parse_value(tokenizer));
+        if (tokenizer->peek_token().get_token_kind() == COMMA)
+            tokenizer->get_token();
+        else
+            expect(tokenizer->peek_token().get_token_kind() == CLOSE_PARENS,
+                   "expected comma or ')' to end function call");
+    }
+    expect(tokenizer->get_token().get_token_kind() == CLOSE_PARENS, "expected ')'");
+    return std::make_shared<FunctionCall>(name, arguments);
+}
+
 std::shared_ptr<ASTValue> parse_value(const std::unique_ptr<Tokenizer>& tokenizer)
+{
+
+}
+git
+std::shared_ptr<ASTValue> parse_value2(const std::unique_ptr<Tokenizer>& tokenizer)
 {
     if(tokenizer->peek_token().get_token_kind() == OPEN_SQUARE_BRACE)
         return parse_tuple(tokenizer);
