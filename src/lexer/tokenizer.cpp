@@ -33,11 +33,18 @@ Token Tokenizer::get_token() {
 }
 
 Token Tokenizer::peek_token() const {
-    auto it = tokens.begin();
-    std::advance(it, index);
-    return *it;
+    return peek_token(0);
 }
 
 bool Tokenizer::end_of_tokens() const {
     return index >= tokens.size();
+}
+
+Token Tokenizer::peek_token(size_t i) const {
+    if(index + i >= tokens.size())
+        throw std::runtime_error("end of tokens");
+
+    auto it = tokens.begin();
+    std::advance(it, index + i);
+    return *it;
 }

@@ -20,6 +20,7 @@ public:
 
     Token get_token();
     [[nodiscard]] Token peek_token() const;
+    [[nodiscard]] Token peek_token(size_t) const;
 };
 
 #endif //LILAC_TOKENIZER_H

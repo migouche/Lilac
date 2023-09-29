@@ -108,11 +108,15 @@ struct FunctionBody
     std::list<FunctionCase> cases;
 };
 
+template<typename T>
+using ast_tuple = std::tuple<bool, std::shared_ptr<T>>;
+
 std::shared_ptr<ASTValue> parse_value(const std::unique_ptr<Tokenizer>& tokenizer);
 
-std::shared_ptr<Tuple> parse_tuple(const std::unique_ptr<Tokenizer>& tokenizer)
+ast_tuple<Tuple> parse_tuple(const std::unique_ptr<Tokenizer>& tokenizer)
 {
-    expect(tokenizer->peek_token().get_token_kind() == OPEN_SQUARE_BRACE, "expected '[' on parsing tuple");
+    if(tokenizer->peek_token().get_token_kind() != OPEN_SQUARE_BRACE)
+        return {false, nullptr};
     tokenizer->get_token(); // consume the '['
     std::list<std::shared_ptr<ASTNode>> elements;
     while(tokenizer->peek_token().get_token_kind() != CLOSE_SQUARE_BRACE)
@@ -125,14 +129,18 @@ std::shared_ptr<Tuple> parse_tuple(const std::unique_ptr<Tokenizer>& tokenizer)
 
     }
     expect(tokenizer->get_token().get_token_kind() == CLOSE_SQUARE_BRACE, "expected ']'");
-    return std::make_shared<Tuple>(elements);
+    return {true, std::make_shared<Tuple>(elements)};
 }
 
-std::shared_ptr<FunctionCall> parse_function_call(const std::unique_ptr<Tokenizer>& tokenizer)
+ast_tuple<FunctionCall> parse_function_call(const std::unique_ptr<Tokenizer>& tokenizer)
 {
+    if(!((tokenizer->peek_token().get_token_kind() == IDENTIFIER || tokenizer->peek_token().is_primitive_operation())
+    && tokenizer->peek_token(1).get_token_kind() == OPEN_PARENS))
+        return {false, nullptr};
+
     auto t = tokenizer->get_token();
     expect(t.get_token_kind() == IDENTIFIER || t.is_primitive_operation(), "expected function name as identifier");
-    expect(t.get_token_kind() == OPEN_PARENS, "expected function parens");
+    expect(tokenizer->get_token().get_token_kind() == OPEN_PARENS, "expected function parens");
     auto name = t.get_token_kind() == IDENTIFIER ? t.get_value(): get_string_from_token(t.get_token_kind());
     std::list<std::shared_ptr<ASTNode>> arguments = {};
     while(tokenizer->peek_token().get_token_kind() != CLOSE_PARENS)
@@ -145,55 +153,35 @@ std::shared_ptr<FunctionCall> parse_function_call(const std::unique_ptr<Tokenize
                    "expected comma or ')' to end function call");
     }
     expect(tokenizer->get_token().get_token_kind() == CLOSE_PARENS, "expected ')'");
-    return std::make_shared<FunctionCall>(name, arguments);
+    return {true, std::make_shared<FunctionCall>(name, arguments)};
+}
+
+ast_tuple<Expression> parse_expression(const std::unique_ptr<Tokenizer>& tokenizer)
+{
+    if(tokenizer->peek_token().get_token_kind() != IDENTIFIER)
+        return {false, nullptr};
+    auto t = tokenizer->get_token();
+    return {true, std::make_shared<Expression>(t)};
 }
 
 std::shared_ptr<ASTValue> parse_value(const std::unique_ptr<Tokenizer>& tokenizer)
 {
-
+    auto [is_tuple, tuple] = parse_tuple(tokenizer);
+    if(is_tuple)
+        return tuple;
+    auto [is_function_call, function_call] = parse_function_call(tokenizer);
+    if(is_function_call)
+        return function_call;
+    auto [is_expression, expression] = parse_expression(tokenizer);
+    if(is_expression)
+        return expression;
+    throw std::runtime_error("Couldn't parse value");
 }
-git
-std::shared_ptr<ASTValue> parse_value2(const std::unique_ptr<Tokenizer>& tokenizer)
-{
-    if(tokenizer->peek_token().get_token_kind() == OPEN_SQUARE_BRACE)
-        return parse_tuple(tokenizer);
-
-    auto tok = tokenizer->get_token();
-
-    expect(tok.get_token_kind() == IDENTIFIER || tok.is_primitive_operation(),
-           "function name / expression must be an identifier");
-    expect(tok.get_token_kind() != TokenKind(']'), "unexpected ']'");
-    std::string name;
-    if(tok.get_token_kind() == IDENTIFIER)
-        name = tok.get_value();
-    else
-        name = get_string_from_token(tok.get_token_kind());
-    if (tokenizer->peek_token().get_token_kind() == OPEN_PARENS) { // TODO: move this to parse_function_call
-        // function
-        tokenizer->get_token();// consume the (
-        std::list<std::shared_ptr<ASTNode>> arguments = {};
-        while (tokenizer->peek_token().get_token_kind() != CLOSE_PARENS) {
-            arguments.push_back(parse_value(tokenizer));
-            if (tokenizer->peek_token().get_token_kind() == COMMA)
-                tokenizer->get_token();
-            else
-                expect(tokenizer->peek_token().get_token_kind() == CLOSE_PARENS,
-                       "expected comma or ')' to end function call");
-        }
-        tokenizer->get_token(); // consume the )
-        return std::make_shared<FunctionCall>(name, arguments);
-    }
-    else
-    {
-        return std::make_shared<Expression>(tok);
-    }
-}
-
 
 
 FunctionCase parse_function_case(const std::unique_ptr<Tokenizer>& tokenizer)
 {
-    expect(tokenizer->get_token().get_token_kind() == IDENTIFIER &&
+        expect(tokenizer->get_token().get_token_kind() == IDENTIFIER &&
            tokenizer->get_token().get_token_kind() == OPEN_PARENS, // no beef inferring for now :(
            "function case must start with a function 'definition'");
     expect(tokenizer->peek_token().get_token_kind() == IDENTIFIER, "function case must have at least one input");
