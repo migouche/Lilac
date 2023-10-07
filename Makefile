@@ -20,12 +20,12 @@ SOURCES = $(shell find $(SRC_PATH) -name '*.$(SRC_EXT)' | sort -k 1nr | cut -f2-
 OBJECTS = $(SOURCES:$(SRC_PATH)/%.$(SRC_EXT)=$(BUILD_PATH)/%.o)
 # Set the dependency files that will be used to add header dependencies
 DEPS = $(OBJECTS:.o=.d)
-
+#need to link keystone
 # flags #
 COMPILE_FLAGS = -std=c++23 -Wall -Wextra -g
-INCLUDES = -I include/ -I /usr/local/include
+INCLUDES = -I include/ -I /usr/local/include -I $(HOME)/local/include
 # Space-separated pkg-config libraries used by this project
-LIBS =
+LIBS = -lkeystone #-L /usr/local/lib -L $(HOME)/local/lib
 
 .PHONY: default_target
 default_target: release

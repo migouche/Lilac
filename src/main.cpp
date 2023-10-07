@@ -9,7 +9,9 @@ int main() {
 
     tree.print();
 
-    //compile("data/hello_amd64.asm", "data/hello_amd64.bin");
+    compile("data/hello_amd64.asm", "data/hello_amd64.bin");
+
+    std::cout << "out" << std::endl;
 
     /*Tokenizer tok("data/function.llc");
 
