@@ -1,4 +1,5 @@
 #include "parser/parser.h"
+#include <casm/casm.h>
 #include <iostream>
 
 int main() {
@@ -7,6 +8,8 @@ int main() {
     auto tree = parser.get_tree();
 
     tree.print();
+
+    //compile("data/hello_amd64.asm", "data/hello_amd64.bin");
 
     /*Tokenizer tok("data/function.llc");
 

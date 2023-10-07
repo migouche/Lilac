@@ -10,7 +10,9 @@ endif ()
 
 include_directories(include)
 
+
 file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS src/*.cpp include/*.h)
 
+add_executable(lilac src/main.cpp ${SOURCE_FILES} )
 
-add_executable(lilac src/main.cpp ${SOURCE_FILES})
+target_link_libraries(lilac keystone)
