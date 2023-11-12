@@ -56,7 +56,7 @@ std::string FileStream::get_token() {
     }
 
 
-    while(is_whitespace(char(file.peek())))
+    while(is_whitespace(char(file.peek()), &line))
         file.get();
 
     if(is_operator(file, r_token))
@@ -71,12 +71,12 @@ std::string FileStream::get_token() {
 
         if(c == '/' && char(file.peek()) == '/')
         {
-            while(!file.eof() && !is_newline(char(file.peek())))
+            while(!file.eof() && !is_newline(char(file.peek()), &line))
                 file.get(c);
             continue;
         }
 
-        if (is_whitespace(c))
+        if (is_whitespace(c, &line))
         {
             if(r_token.empty())
                 continue;

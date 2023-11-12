@@ -13,6 +13,8 @@ private:
     std::ifstream file;
     std::string buffer;
 
+    size_t line = 1, pos = 0;
+
     std::string swap_buffer(std::string new_buffer);
 public:
     explicit FileStream(const std::string& filename);

@@ -13,8 +13,8 @@ namespace lexer_functions
     bool is_operator_token(const std::string& token);
     bool is_keyword(const std::string& token);
 
-    bool is_whitespace(char c);
-    bool is_newline(char c);
+    bool is_whitespace(char c, size_t* line);
+    bool is_newline(char c, size_t* line);
     bool is_numeric(char c);
     bool is_alpha(char c);
     bool is_alphanumeric(char c);
