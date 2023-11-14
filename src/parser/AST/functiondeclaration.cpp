@@ -9,12 +9,14 @@
 
 FunctionDeclaration::FunctionDeclaration(std::string name,
                                          std::list<Token> domain, std::list<Token> codomain,
-                                         std::list<FunctionCase> cases):
+                                         std::list<FunctionCase> cases, bool pure):
                                          name(std::move(name)), domain(std::move(domain)),
-                                         codomain(std::move(codomain)), cases(std::move(cases)){}
+                                         codomain(std::move(codomain)), cases(std::move(cases)),
+                                         pure(pure){}
 
 void FunctionDeclaration::print() const {
     std::cout << "name: " << name << std::endl;
+    std::cout << "purity: " << (pure ? "pure": "impure") << std::endl;
 
     std::cout << "domain: ";
     for(auto& token: domain) {

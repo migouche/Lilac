@@ -30,10 +30,19 @@ struct FunctionHeader
     std::list<Token> codomain;
 };
 
-FunctionHeader get_function_header(const std::unique_ptr<Tokenizer>& tokenizer)
+FunctionHeader get_function_header(const std::unique_ptr<Tokenizer>& tokenizer, bool* pure)
 {
 
-    expect(tokenizer->get_token() == Token(KEYWORD, "func"), "function parsing must start by 'func'");
+    expect(tokenizer->peek_token().get_info() == std::make_pair(KEYWORD, std::string ("func")) ||
+            tokenizer->peek_token().get_info() == std::make_pair(KEYWORD, std::string("impure")),
+           "function parsing must start by 'func' or by 'impure func'"); // cant put template here
+
+    *pure = true;
+    if(tokenizer->get_token().get_value() == "impure")
+    {
+        tokenizer->get_token(); // consume 'func'
+        *pure = false;
+    }
 
     bool domain_parens = false;
     bool codomain_parens = false;
@@ -72,7 +81,7 @@ FunctionHeader get_function_header(const std::unique_ptr<Tokenizer>& tokenizer)
     expect(tokenizer->get_token().get_token_kind() == get_multi_byte_token_kind("->"),
            "expected '->' to introduce return type");
 
-    if(tokenizer->peek_token() == Token(TokenKind('(')))
+    if(tokenizer->peek_token().get_token_kind() == TokenKind('('))
     {
         codomain_parens = true;
         tokenizer->get_token();
@@ -219,28 +228,32 @@ FunctionBody parse_function_body(const std::unique_ptr<Tokenizer>& tokenizer)
     {
         cases.push_back(parse_function_case(tokenizer));
     }
+    expect(tokenizer->get_token().get_token_kind() == CLOSE_CURLEY_BRACE,
+           "expected '}', although this should never happen :/");
     return {cases};
 }
 
-std::shared_ptr<FunctionDeclaration> get_function_from_parts(const FunctionHeader& h, const FunctionBody& b)
+std::shared_ptr<FunctionDeclaration> get_function_from_parts(const FunctionHeader& h, const FunctionBody& b, bool pure)
 {
-    return std::make_shared<FunctionDeclaration>(h.name, h.domain, h.codomain, b.cases);
+    return std::make_shared<FunctionDeclaration>(h.name, h.domain, h.codomain, b.cases, pure);
 }
 
 std::shared_ptr<FunctionDeclaration> Parser::parse_function() {
-    auto header = get_function_header(tokenizer);
+    bool pure;
+    auto header = get_function_header(tokenizer, &pure);
     auto body = parse_function_body(tokenizer);
-    return get_function_from_parts(header, body);
+    return get_function_from_parts(header, body, pure);
 }
 
-ASTTree Parser::get_tree() {
+ASTTree Parser::get_tree() { // NOTE: must be a copy because compiler lifetime is much greater than parser
     ASTTree tree = ASTTree();
     while(!tokenizer->end_of_tokens())
     {
-        if(tokenizer->peek_token() == Token(KEYWORD, "func"))
-            tree.add_child(parse_function());
-        else
-            tokenizer->get_token();
+        expect(tokenizer->peek_token().get_info() == std::make_pair(KEYWORD, std::string("func"))||
+           tokenizer->peek_token().get_info() == std::make_pair(KEYWORD, std::string("impure")),
+                   "expected function declaration, got " + get_string_from_token(tokenizer->peek_token().get_token_kind()));
+
+        tree.add_child(parse_function());
     }
 
     return tree;

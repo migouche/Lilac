@@ -53,3 +53,9 @@ func add_negative int, int -> int
 {
     add_negative(n, m) = add(n, sub(m)); // this is just for testing parsing multiple operators
 }
+
+impure func display_stuff int -> // impure functions can only be called from another impure function
+{
+    display_stuff(n) = print(n) // redundant but just to show how it works
+    // we suppose print() is an impure function defined in stl
+}

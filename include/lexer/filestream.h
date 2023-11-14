@@ -22,6 +22,9 @@ public:
     std::string peek_token() const;
     std::string get_token(); // NOT CONST
 
+    size_t get_line() const;
+    size_t get_pos() const;
+
     bool is_eof() const;
 };
 

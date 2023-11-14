@@ -13,14 +13,15 @@ Tokenizer::Tokenizer(const std::string &path)
 {
     FileStream s(path);
     tokens = std::list<Token>();
-    while(!s.is_eof()) {
-        auto token = s.get_token();
+    while(!s.is_eof()) { // TODO: can def do this on the go but eh, it works
+        std::string token = s.get_token();
         if (is_operator_token(token) || is_special_character(token))
-            tokens.emplace_back(get_token_kind(token), "");
+            tokens.emplace_back(get_token_kind(token), "", s.get_line(), s.get_pos());
+        // TODO: confirm "" can just not be there
         else if(is_keyword(token))
-            tokens.emplace_back(KEYWORD, token);
+            tokens.emplace_back(KEYWORD, token, s.get_line(), s.get_pos());
         else
-            tokens.emplace_back(IDENTIFIER, token);
+            tokens.emplace_back(IDENTIFIER, token, s.get_line(), s.get_pos());
     }
 }
 

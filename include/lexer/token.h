@@ -14,12 +14,17 @@ private:
     std::string value;
 
 public:
-    Token(TokenKind, std::string);
-    explicit Token(TokenKind);
+    Token(TokenKind, std::string, size_t, size_t);
+    Token(TokenKind, size_t, size_t);
+
+    const size_t line;
+    const size_t pos;
 
     [[nodiscard]] std::string get_value() const;
     [[nodiscard]] TokenKind get_token_kind() const;
     [[nodiscard]] bool is_primitive_operation() const;
+
+    std::pair<TokenKind, std::string> get_info() const;
 
     bool operator==(const Token& other) const;
 

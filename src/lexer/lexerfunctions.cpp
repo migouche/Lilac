@@ -24,7 +24,7 @@ bool lexer_functions::is_operator_token(const std::string &token)
 bool lexer_functions::is_keyword(const std::string &token)
 {
     return token == "if" || token == "else" || token == "while" || token == "for" || token == "do" || token == "func" ||
-           token == "when" || token == "enum";
+           token == "when" || token == "enum" || token == "impure";
 }
 
 bool lexer_functions::is_whitespace(char c, size_t* line)

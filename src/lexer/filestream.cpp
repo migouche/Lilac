@@ -131,4 +131,7 @@ std::string FileStream::swap_buffer(std::string new_buffer) {
     return r;
 }
 
+size_t FileStream::get_line() const { return line; }
+
+size_t FileStream::get_pos() const { return pos; }
 

@@ -5,11 +5,9 @@
 #include <iostream>
 #include "lexer/token.h"
 
-Token::Token(TokenKind k, std::string s) : kind(k), value(std::move(s)) {}
-Token::Token(TokenKind k): kind(k)
-{
-    value = "";
-}
+Token::Token(TokenKind k, std::string s, size_t line, size_t pos): kind(k), value(std::move(s)) , line(line), pos(pos){}
+
+Token::Token(TokenKind k, size_t line, size_t pos): Token(k, "", line, pos) {}
 
 std::string Token::get_value() const {
     return value;
@@ -35,6 +33,10 @@ bool Token::is_primitive_operation() const {
         return false;
     return kind == PLUS || kind == MINUS || kind == STAR || kind == SLASH || kind == EQUAL_EQUAL || kind == LESS ||
     kind == GREATER || kind == LESS_EQUAL || kind == GREATER_EQUAL;
+}
+
+std::pair<TokenKind, std::string> Token::get_info() const {
+    return {kind, value};
 }
 
 std::ostream &operator<<(std::ostream &os, const Token& t) {

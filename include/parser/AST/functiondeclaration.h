@@ -26,8 +26,9 @@ private:
     std::list<Token> domain;
     std::list<Token> codomain;
     std::list<FunctionCase> cases;
+    bool pure;
 public:
-    FunctionDeclaration(std::string , std::list<Token>, std::list<Token>, std::list<FunctionCase>);
+    FunctionDeclaration(std::string , std::list<Token>, std::list<Token>, std::list<FunctionCase>, bool);
     void print() const override;
 
 };
