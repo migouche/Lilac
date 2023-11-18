@@ -27,21 +27,14 @@ bool lexer_functions::is_keyword(const std::string &token)
            token == "when" || token == "enum" || token == "impure";
 }
 
-bool lexer_functions::is_whitespace(char c, size_t* line)
+bool lexer_functions::is_whitespace(char c)
 {
-    if(is_newline(c, line))
-    {
-        (*line)++;
-        return true;
-    }
-    return c == ' ' || c == '\t';
+    return is_newline(c) || c == ' ' || c == '\t';
 }
 
-bool lexer_functions::is_newline(char c, size_t* line)
+bool lexer_functions::is_newline(char c)
 {
     auto b =  c == '\n' || c == '\r';
-    if(b)
-        (*line)++;
     return b;
 }
 

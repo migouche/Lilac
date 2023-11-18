@@ -24,7 +24,10 @@ public:
     [[nodiscard]] TokenKind get_token_kind() const;
     [[nodiscard]] bool is_primitive_operation() const;
 
-    std::pair<TokenKind, std::string> get_info() const;
+    [[nodiscard]] std::pair<TokenKind, std::string> get_info() const;
+
+    [[nodiscard]] size_t get_line() const;
+    [[nodiscard]] size_t get_pos() const;
 
     bool operator==(const Token& other) const;
 

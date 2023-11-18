@@ -9,7 +9,7 @@
 
 using namespace lexer_functions;
 
-bool is_operator(std::ifstream& file, std::string& out_string)
+bool is_operator(FileStream& file, std::string& out_string)
 {
     if(! is_operator_character(char(file.peek())))
         return false;
@@ -17,6 +17,7 @@ bool is_operator(std::ifstream& file, std::string& out_string)
 
     while(!file.eof() && is_operator_character(char(file.peek())))
     {
+
         char c;
         file.get(c);
         if(is_end_of_operator(c))
@@ -56,27 +57,29 @@ std::string FileStream::get_token() {
     }
 
 
-    while(is_whitespace(char(file.peek()), &line))
-        file.get();
+    while(is_whitespace(char(peek())))
+        get();
 
-    if(is_operator(file, r_token))
+    pos_buffer.emplace_front(pos, line);
+
+    if(is_operator(*this, r_token))
         return swap_buffer(r_token);
 
-    while (!file.eof()) {
+    while (!eof()) {
         char c;
-        file.get(c);
+        get(c);
 
 
 
 
-        if(c == '/' && char(file.peek()) == '/')
+        if(c == '/' && char(peek()) == '/')
         {
-            while(!file.eof() && !is_newline(char(file.peek()), &line))
-                file.get(c);
+            while(!eof() && !is_newline(char(peek())))
+                get(c);
             continue;
         }
 
-        if (is_whitespace(c, &line))
+        if (is_whitespace(c))
         {
             if(r_token.empty())
                 continue;
@@ -87,7 +90,7 @@ std::string FileStream::get_token() {
             if(r_token.empty())
                 return swap_buffer({c});
             else {
-                file.putback(c);
+                putback(c);
                 break;
             }
         }
@@ -95,7 +98,7 @@ std::string FileStream::get_token() {
         if(is_operator_character(c))
         {
             lassert(!r_token.empty(), "must have read something else already");
-            file.putback(c);
+            putback(c);
             break;
         }
 
@@ -114,7 +117,7 @@ std::string FileStream::peek_token() const {
 
 FileStream::FileStream(const std::string& filename) {
     file.open(filename);
-
+    pos_buffer = {};
     if (!file) {
         throw std::runtime_error("Could not open file " + filename);
     }
@@ -134,4 +137,35 @@ std::string FileStream::swap_buffer(std::string new_buffer) {
 size_t FileStream::get_line() const { return line; }
 
 size_t FileStream::get_pos() const { return pos; }
+
+std::istream& FileStream::get(char &c) {
+    pos++;
+    if(is_newline(char(peek()))) {
+        pos = 0;
+        line++;
+    }
+    return file.get(c);
+}
+
+int FileStream::peek() {
+    return file.peek();
+}
+
+std::istream &FileStream::putback(char c) {
+    pos--;
+    return file.putback(c);
+}
+
+int FileStream::get() {
+    return file.get();
+}
+
+bool FileStream::eof() {
+    return file.eof();
+}
+
+size_t FileStream::get_stream_pos() {
+    return file.tellg();
+}
+
 

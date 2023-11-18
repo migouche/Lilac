@@ -28,6 +28,7 @@ void Token::print() const {
         std::cout << get_string_from_token(kind);
 }
 
+
 bool Token::is_primitive_operation() const {
     if(!value.empty())
         return false;
@@ -39,12 +40,23 @@ std::pair<TokenKind, std::string> Token::get_info() const {
     return {kind, value};
 }
 
+size_t Token::get_line() const {
+    return line;
+}
+
+size_t Token::get_pos() const {
+    return pos;
+}
+
+
+
 std::ostream &operator<<(std::ostream &os, const Token& t) {
+    os << t.get_line() << ":" << t.get_pos() << " ";
     if(t.get_token_kind() == IDENTIFIER)
         return os << "IDENTIFIER: " << t.get_value();
     if(t.get_token_kind() == KEYWORD)
         return os << "KEYWORD: " << t.get_value();
-    return os << "'" <<get_string_from_token(t.get_token_kind()) << "'";
+    return os << "'" << get_string_from_token(t.get_token_kind()) << "'";
 }
 
 

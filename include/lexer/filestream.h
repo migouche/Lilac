@@ -7,6 +7,7 @@
 
 #include <fstream>
 #include <string>
+#include <list>
 
 class FileStream {
 private:
@@ -16,6 +17,14 @@ private:
     size_t line = 1, pos = 0;
 
     std::string swap_buffer(std::string new_buffer);
+
+    std::istream& get(char& c);
+    int get();
+    std::istream& putback(char c);
+    int peek();
+    bool eof();
+
+    std::list<std::pair<size_t, size_t>> pos_buffer;
 public:
     explicit FileStream(const std::string& filename);
 
@@ -24,8 +33,11 @@ public:
 
     size_t get_line() const;
     size_t get_pos() const;
+    size_t get_stream_pos();
 
     bool is_eof() const;
+
+    friend bool is_operator(FileStream& file, std::string& out_string);
 };
 
 
