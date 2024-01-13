@@ -6,7 +6,7 @@
 #define LILAC_COMPILER_H
 
 #include <string>
-#include "parser/AST/asttree.h"
+#include "AST/asttree.h"
 #include <vector>
 
 class Compiler
@@ -31,6 +31,9 @@ public:
     ASTTree& get_tree(size_t i = 0);
 
     std::string status();
+
+    static llvm::Value* log_error_v(std::string);
+
 };
 
 #endif //LILAC_COMPILER_H

@@ -7,9 +7,9 @@
 
 #include <memory>
 #include "lexer/tokenizer.h"
-#include "parser/AST/asttree.h"
-#include "parser/AST/astnode.h"
-#include "parser/AST/ASTValues/functioncall.h"
+#include "AST/asttree.h"
+#include "AST/ASTValues/functioncall.h"
+
 
 class Parser
 {
@@ -17,7 +17,11 @@ private:
     std::unique_ptr<Tokenizer> tokenizer;
     std::shared_ptr<FunctionDeclaration> parse_function();
     std::shared_ptr<FunctionCall> parse_call;
+
+
+
 public:
+
     explicit Parser(const std::string&);
     ASTTree get_tree();
 };

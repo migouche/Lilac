@@ -29,10 +29,10 @@ public:
     explicit FileStream(const std::string& filename);
 
     std::string peek_token() const;
-    std::string get_token(); // NOT CONST
+    std::string get_token(); // NOT CONST  // we add pos and line in here
 
-    size_t get_line() const;
-    size_t get_pos() const;
+    std::pair<size_t, size_t> get_pos();
+
     size_t get_stream_pos();
 
     bool is_eof() const;

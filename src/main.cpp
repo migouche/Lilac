@@ -1,7 +1,8 @@
 #include "compiler/compiler.h"
 #include "lexer/tokenizer.h"
-#include <casm/casm.h>
 #include <iostream>
+//#include "debugmode.h" // remove this line to disable "debug mode"
+
 
 int main() {
 
@@ -18,7 +19,9 @@ int main() {
     {
         std::cout << "Compilation failed:\n" << e.what() << std::endl; // TODO: better errors xd
     }
-    compile((char *) "data/hello_amd64.asm", (char *) "data/hello_amd64.bin");
+
+
+#ifdef DEBUG_MODE
 
     std::cout << "out" << std::endl;
 
@@ -27,6 +30,10 @@ int main() {
     while(!tok.end_of_tokens()) {
         std::cout << tok.get_token() << " ";
     }
+
+#endif
+
+    // testing a simple sum using LLVM
 
     return 0;
 

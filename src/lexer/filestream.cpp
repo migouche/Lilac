@@ -60,10 +60,12 @@ std::string FileStream::get_token() {
     while(is_whitespace(char(peek())))
         get();
 
-    pos_buffer.emplace_front(pos, line);
+    //pos_buffer.emplace_front(pos, line);
 
-    if(is_operator(*this, r_token))
+    if(is_operator(*this, r_token)) {
+        pos_buffer.emplace_back(pos, line);
         return swap_buffer(r_token);
+    }
 
     while (!eof()) {
         char c;
@@ -85,10 +87,13 @@ std::string FileStream::get_token() {
                 continue;
             break;
         }
+        //pos_buffer.emplace_back(pos, line);
 
         if(is_special_character(c)) {
-            if(r_token.empty())
+            if(r_token.empty()) {
+                pos_buffer.emplace_back(pos, line);
                 return swap_buffer({c});
+            }
             else {
                 putback(c);
                 break;
@@ -107,6 +112,7 @@ std::string FileStream::get_token() {
 
     }
 
+    pos_buffer.emplace_back(pos, line);
 
     return swap_buffer(r_token);
 }
@@ -134,9 +140,13 @@ std::string FileStream::swap_buffer(std::string new_buffer) {
     return r;
 }
 
-size_t FileStream::get_line() const { return line; }
 
-size_t FileStream::get_pos() const { return pos; }
+std::pair<size_t, size_t> FileStream::get_pos()
+{
+    auto p = pos_buffer.front();
+    pos_buffer.pop_front();
+    return p;
+}
 
 std::istream& FileStream::get(char &c) {
     pos++;

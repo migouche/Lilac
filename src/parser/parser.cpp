@@ -4,8 +4,9 @@
 
 #include <iostream>
 #include "parser/parser.h"
-#include "parser/AST/ASTValues/expression.h"
-#include "parser/AST/ASTValues/tuple.h"
+#include "AST/ASTValues/literal.h"
+#include "AST/ASTValues/tuple.h"
+#include <llvm/Support/ErrorHandling.h>
 
 void __l_fail(const std::string& message, const std::string& file, int line)
 {
@@ -127,7 +128,7 @@ ast_tuple<Tuple> parse_tuple(const std::unique_ptr<Tokenizer>& tokenizer)
     if(tokenizer->peek_token().get_token_kind() != OPEN_SQUARE_BRACE)
         return {false, nullptr};
     tokenizer->get_token(); // consume the '['
-    std::list<std::shared_ptr<ASTNode>> elements;
+    std::list<std::shared_ptr<ASTValue>> elements;
     while(tokenizer->peek_token().get_token_kind() != CLOSE_SQUARE_BRACE)
     {
         elements.push_back(parse_value(tokenizer));
@@ -151,7 +152,7 @@ ast_tuple<FunctionCall> parse_function_call(const std::unique_ptr<Tokenizer>& to
     expect(t.get_token_kind() == IDENTIFIER || t.is_primitive_operation(), "expected function name as identifier");
     expect(tokenizer->get_token().get_token_kind() == OPEN_PARENS, "expected function parens");
     auto name = t.get_token_kind() == IDENTIFIER ? t.get_value(): get_string_from_token(t.get_token_kind());
-    std::list<std::shared_ptr<ASTNode>> arguments = {};
+    std::list<std::shared_ptr<ASTValue>> arguments = {};
     while(tokenizer->peek_token().get_token_kind() != CLOSE_PARENS)
     {
         arguments.push_back(parse_value(tokenizer));
@@ -165,12 +166,12 @@ ast_tuple<FunctionCall> parse_function_call(const std::unique_ptr<Tokenizer>& to
     return {true, std::make_shared<FunctionCall>(name, arguments)};
 }
 
-ast_tuple<Expression> parse_expression(const std::unique_ptr<Tokenizer>& tokenizer)
+ast_tuple<Literal> parse_expression(const std::unique_ptr<Tokenizer>& tokenizer)
 {
     if(tokenizer->peek_token().get_token_kind() != IDENTIFIER)
         return {false, nullptr};
     auto t = tokenizer->get_token();
-    return {true, std::make_shared<Expression>(t)};
+    return {true, std::make_shared<Literal>(t)};
 }
 
 std::shared_ptr<ASTValue> parse_value(const std::unique_ptr<Tokenizer>& tokenizer)
@@ -258,3 +259,4 @@ ASTTree Parser::get_tree() { // NOTE: must be a copy because compiler lifetime i
 
     return tree;
 }
+

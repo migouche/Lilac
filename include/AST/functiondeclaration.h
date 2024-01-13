@@ -6,9 +6,8 @@
 #define LILAC_FUNCTIONDECLARATION_H
 
 #include <list>
-#include "parser/AST/astnode.h"
 #include "lexer/token.h"
-#include "parser/AST/astvalue.h"
+#include "astvalue.h"
 
 struct FunctionCase
 {
@@ -19,7 +18,7 @@ struct FunctionCase
     void print() const;
 };
 
-class FunctionDeclaration: public ASTNode
+class FunctionDeclaration
 {
 private:
     std::string name;
@@ -29,7 +28,8 @@ private:
     bool pure;
 public:
     FunctionDeclaration(std::string , std::list<Token>, std::list<Token>, std::list<FunctionCase>, bool);
-    void print() const override;
+    void print() const;
+    llvm::Function* codegen();
 
 };
 

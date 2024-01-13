@@ -1,4 +1,4 @@
-impure func unpack_complex complex -> float, float
+func avg int, int -> int
 {
-    unpack_complex(c) = [get_real(c), get_imaginary(c)];
+    avg(a, b) = add(sum(a, b), 2);
 }

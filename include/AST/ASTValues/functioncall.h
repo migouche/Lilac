@@ -5,16 +5,19 @@
 #ifndef LILAC_FUNCTIONCALL_H
 #define LILAC_FUNCTIONCALL_H
 
-#include "parser/AST/astvalue.h"
+#include <list>
+#include "AST/astvalue.h"
 
 class FunctionCall: public ASTValue
 {
 private:
     std::string name;
+    std::list<std::shared_ptr<ASTValue>> arguments;
 public:
-    FunctionCall(std::string name, std::list<std::shared_ptr<ASTNode>> arguments);
+    FunctionCall(std::string name, std::list<std::shared_ptr<ASTValue>> arguments);
 
     void print() const override;
+    llvm::Value * codegen() override;
 };
 
 #endif //LILAC_FUNCTIONCALL_H

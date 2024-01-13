@@ -2,10 +2,11 @@
 // Created by migouche on 9/13/2023.
 //
 
-#include "parser/AST/functiondeclaration.h"
+#include "AST/functiondeclaration.h"
 
 #include <utility>
 #include <iostream>
+
 
 FunctionDeclaration::FunctionDeclaration(std::string name,
                                          std::list<Token> domain, std::list<Token> codomain,
@@ -33,6 +34,11 @@ void FunctionDeclaration::print() const {
     for(const auto& f_case: cases)
         f_case.print();
 }
+
+llvm::Function *FunctionDeclaration::codegen() {
+    return nullptr;
+}
+
 
 void FunctionCase::print() const {
     std::cout << "function case: \n\tinputs: \n\t";

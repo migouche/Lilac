@@ -15,12 +15,13 @@ Tokenizer::Tokenizer(const std::string &path)
     tokens = std::list<Token>();
     while(!s.is_eof()) { // TODO: can def do this on the go but eh, it works
         std::string token = s.get_token();
+        auto [pos, line] = s.get_pos();
         if (is_operator_token(token) || is_special_character(token))
-            tokens.emplace_back(get_token_kind(token), s.get_line(), s.get_pos());
+            tokens.emplace_back(get_token_kind(token), line, pos);
         else if(is_keyword(token))
-            tokens.emplace_back(KEYWORD, token, s.get_line(), s.get_pos());
+            tokens.emplace_back(KEYWORD, token, line, pos);
         else
-            tokens.emplace_back(IDENTIFIER, token, s.get_line(), s.get_pos());
+            tokens.emplace_back(IDENTIFIER, token, line, pos);
     }
 }
 

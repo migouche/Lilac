@@ -11,7 +11,7 @@ func factorial (nat) -> nat
 
 func is_greater_than_seven (int) -> bool
 {
-    is_greater_than_seven(n) where(less_than(n, 8) = false;
+    is_greater_than_seven(n) where(less_than(n, 8)) = false;
     is_greater_than_seven(_) = true; // will test top to bottom and return first pattern that matches
 }
 

@@ -1,6 +1,7 @@
 //
 // Created by migouche on 11/14/2023.
 //
+#include <iostream>
 #include "compiler/compiler.h"
 #include "parser/parser.h"
 
