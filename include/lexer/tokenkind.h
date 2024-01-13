@@ -60,6 +60,8 @@ enum TokenKind
     CARET = '^',
     TILDE = '~',
 
+    UNDERSCORE = '_',
+
     MULTIBYTE_START = 255,
 
     MINUS_GREATER = "->"_u64,

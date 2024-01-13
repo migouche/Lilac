@@ -3,6 +3,7 @@
 //
 
 #include "AST/functiondeclaration.h"
+#include "parser/parser_data.h"
 
 #include <utility>
 #include <iostream>
@@ -35,8 +36,33 @@ void FunctionDeclaration::print() const {
         f_case.print();
 }
 
-llvm::Function *FunctionDeclaration::codegen() {
-    return nullptr;
+llvm::Function *FunctionDeclaration::prototype_codegen() const{
+    std::vector<llvm::Type*> dom(domain.size(), llvm::Type::getInt32Ty(*parser_data::context));
+    llvm::FunctionType* ft =
+            llvm::FunctionType::get(llvm::Type::getInt32Ty(
+                    *parser_data::context), dom, false);
+    llvm::Function* f =
+            llvm::Function::Create(ft,
+                                   llvm::Function::ExternalLinkage,
+                                   name, *parser_data::module);
+
+    unsigned char i = 0;
+    for(auto& arg: f->args())
+        arg.setName(std::string(1, 'a' + i++)); // dont have names?? for now so im using letters of the alphabet
+    return f;
+}
+
+llvm::Function *FunctionDeclaration::codegen() const {
+    llvm::Function* f = parser_data::module->getFunction(name);
+    if(!f)
+        f = prototype_codegen();
+    // supposedly it can never be null
+
+    llvm::BasicBlock* bb = llvm::BasicBlock::Create(*parser_data::context,
+                                                   "entry", f);
+    parser_data::builder->SetInsertPoint(bb);
+
+
 }
 
 
@@ -52,4 +78,17 @@ void FunctionCase::print() const {
 
     output->print();
     std::cout << std::endl;
+}
+
+bool FunctionCase::input_match(std::vector<Token> tokens) const {
+    for (const auto& t: tokens)
+    {
+        if(t.get_token_kind() != UNDERSCORE || t.get_token_kind() != IDENTIFIER)
+            return false;
+        if(t.get_token_kind() == UNDERSCORE)
+            continue;
+        // it is an identifier now
+
+    }
+
 }

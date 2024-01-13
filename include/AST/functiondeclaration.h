@@ -15,6 +15,8 @@ struct FunctionCase
     //&std::list<Token> outputs; // TODO: must be an function call, for once functional programming saves us
     std::shared_ptr<ASTValue> output;
 
+    bool input_match(std::vector<Token>) const;
+
     void print() const;
 };
 
@@ -29,7 +31,8 @@ private:
 public:
     FunctionDeclaration(std::string , std::list<Token>, std::list<Token>, std::list<FunctionCase>, bool);
     void print() const;
-    llvm::Function* codegen();
+    [[nodiscard]] llvm::Function* codegen() const;
+    [[nodiscard]] llvm::Function* prototype_codegen() const;
 
 };
 

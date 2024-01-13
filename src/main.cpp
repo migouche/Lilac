@@ -1,7 +1,8 @@
 #include "compiler/compiler.h"
 #include "lexer/tokenizer.h"
 #include <iostream>
-//#include "debugmode.h" // remove this line to disable "debug mode"
+
+#include "debugmode.h" // remove this line to disable "debug mode"
 
 
 int main() {

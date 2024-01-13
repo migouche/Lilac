@@ -41,5 +41,5 @@ llvm::Value *FunctionCall::codegen() {
         if(!args_v.back())
             return nullptr;
     }
-    return parser_data::builder->CreateCall(callee, args_v, "calltmp")
+    return parser_data::builder->CreateCall(callee, args_v, "calltmp");
 }
