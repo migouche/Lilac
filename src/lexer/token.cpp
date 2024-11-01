@@ -48,6 +48,9 @@ size_t Token::get_pos() const {
     return pos;
 }
 
+bool Token::is_variable() const {
+    return get_token_kind() ==  IDENTIFIER && isalpha(get_value().at(0)); // will have to rework
+}
 
 
 std::ostream &operator<<(std::ostream &os, const Token& t) {

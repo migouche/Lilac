@@ -16,7 +16,7 @@ public:
     explicit Literal(Token token);
 
     void print() const override;
-    llvm::Value * codegen() override;
+    llvm::Value * codegen(const std::shared_ptr<ParserData>&) override;
 
 };
 

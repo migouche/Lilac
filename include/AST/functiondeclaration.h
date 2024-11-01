@@ -8,6 +8,7 @@
 #include <list>
 #include "lexer/token.h"
 #include "astvalue.h"
+#include "parser/parser_data.h"
 
 struct FunctionCase
 {
@@ -15,7 +16,9 @@ struct FunctionCase
     //&std::list<Token> outputs; // TODO: must be an function call, for once functional programming saves us
     std::shared_ptr<ASTValue> output;
 
-    bool input_match(std::vector<Token>) const;
+    [[nodiscard]] bool input_match(const std::vector<Token>&) const;
+
+    llvm::Value* codegen(const std::shared_ptr<ParserData>&) const;
 
     void print() const;
 };
@@ -31,8 +34,8 @@ private:
 public:
     FunctionDeclaration(std::string , std::list<Token>, std::list<Token>, std::list<FunctionCase>, bool);
     void print() const;
-    [[nodiscard]] llvm::Function* codegen() const;
-    [[nodiscard]] llvm::Function* prototype_codegen() const;
+    [[nodiscard]] llvm::Function* codegen(const std::shared_ptr<ParserData>&) const;
+    [[nodiscard]] llvm::Function* prototype_codegen(const std::shared_ptr<ParserData>&) const;
 
 };
 

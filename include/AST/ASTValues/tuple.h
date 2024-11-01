@@ -14,7 +14,7 @@ public:
     explicit Tuple(std::list<std::shared_ptr<ASTValue>> elements); //
 
     void print() const override;
-    llvm::Value * codegen() override;
+    llvm::Value * codegen(const std::shared_ptr<ParserData>&) override;
 private:
     std::list<std::shared_ptr<ASTValue>> elements;
 };

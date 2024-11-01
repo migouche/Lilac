@@ -18,12 +18,11 @@ void FunctionCall::print() const {
 }
 
 FunctionCall::FunctionCall(std::string  name, std::list<std::shared_ptr<ASTValue>> arguments):
-    name(std::move(name)), arguments(std::move(arguments))
-{
-}
+    name(std::move(name)), arguments(std::move(arguments)){}
 
-llvm::Value *FunctionCall::codegen() {
-    llvm::Function *callee = parser_data::module->getFunction(name);
+
+llvm::Value *FunctionCall::codegen(const std::shared_ptr<ParserData>& parser_data) {
+    llvm::Function *callee = parser_data->module->getFunction(name);
     if(!callee) {
         std::cerr << "Unknown reference to: " << name << std::endl;
         return nullptr;
@@ -32,14 +31,15 @@ llvm::Value *FunctionCall::codegen() {
     {
         std::cerr << "Incorrect number of arguments, expected " << callee->arg_size()
         << ", got " << arguments.size() << std::endl;
+        return nullptr;
     }
 
     std::vector<llvm::Value*> args_v;
     for(const auto& arg: arguments)
     {
-        args_v.push_back(arg->codegen());
+        args_v.push_back(arg->codegen(parser_data));
         if(!args_v.back())
             return nullptr;
     }
-    return parser_data::builder->CreateCall(callee, args_v, "calltmp");
+    return parser_data->builder->CreateCall(callee, args_v, "calltmp");
 }

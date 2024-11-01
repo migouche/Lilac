@@ -31,6 +31,8 @@ public:
 
     bool operator==(const Token& other) const;
 
+    bool is_variable() const;
+
     void print() const;
 };
 

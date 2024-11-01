@@ -7,6 +7,7 @@
 
 #include <memory>
 #include "functiondeclaration.h"
+#include "parser/parser_data.h"
 
 class ASTTree
 {
@@ -17,6 +18,7 @@ public:
     void print() const;
     ASTTree();
     explicit ASTTree(std::list<std::shared_ptr<FunctionDeclaration>>);
+    void codegen(const std::shared_ptr<ParserData>&) const;
 };
 
 #endif //LILAC_AST_H

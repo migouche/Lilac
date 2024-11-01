@@ -11,14 +11,24 @@
 #include <llvm/IR/IRBuilder.h>
 #include <map>
 
-namespace parser_data
-{
-    static std::unique_ptr<llvm::LLVMContext> context;
-    static std::unique_ptr<llvm::IRBuilder<>> builder =
-            std::make_unique<llvm::IRBuilder<>>(*context);
-    static std::unique_ptr<llvm::Module> module;
-    static std::map<std::string, llvm::Value*> named_values;
-}
+
+
+struct ParserData{
+public:
+     std::unique_ptr<llvm::LLVMContext> context;
+     std::unique_ptr<llvm::IRBuilder<>> builder;
+     std::unique_ptr<llvm::Module> module;
+     std::map<std::string, llvm::Value*> named_values;
+
+    ParserData();
+
+    ParserData(const ParserData&) = delete;
+    const std::shared_ptr<ParserData>& operator=(const ParserData&) = delete;
+
+    ParserData(ParserData&&) = default;
+    ParserData& operator=(ParserData&&) = default;
+};
+
 
 
 #endif //LILAC_PARSER_DATA_H

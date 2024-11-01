@@ -3,18 +3,23 @@
 #include <iostream>
 
 #include "debugmode.h" // remove this line to disable "debug mode"
+#include "parser/parser_data.h"
 
 
 int main() {
 
     //Parser parser("data/function.llc");
-
     try {
-        Compiler c("data/function.llc");
+        std::vector<std::string> files = {"data/function.llc"};
+        Compiler c(files);
 
         auto tree = c.get_tree();
 
         tree.print();
+
+#ifdef DEBUG_MODE
+        c.get_parser_data()->module->print(llvm::errs(), nullptr);
+#endif
     }
     catch (const std::runtime_error& e)
     {
@@ -32,6 +37,11 @@ int main() {
         std::cout << tok.get_token() << " ";
     }
 
+    // DEBUG CODE:
+
+
+
+    //parser_data::module->print(llvm::errs(), nullptr);
 #endif
 
     // testing a simple sum using LLVM

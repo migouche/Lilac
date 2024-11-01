@@ -7,7 +7,7 @@
 
 class UnaryOperation
 {
-    private
+private:
 };
 
 #endif //LILAC_OPERATION_H

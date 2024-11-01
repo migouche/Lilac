@@ -13,7 +13,7 @@ Literal::Literal(Token token): token(std::move(token)) {}
 
 void Literal::print() const {std::cout << token.get_value(); }
 
-llvm::Value *Literal::codegen() {
+llvm::Value *Literal::codegen(const std::shared_ptr<ParserData>& parser_data) {
     //TODO: WE WILL ONLY USE INTS FOR NOW
-    return llvm::ConstantInt::get(*parser_data::context, llvm::APInt(32, 4));
+    return llvm::ConstantInt::get(*parser_data->context, llvm::APInt(32, 4));
 }

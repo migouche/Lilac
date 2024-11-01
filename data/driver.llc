@@ -45,6 +45,7 @@ func fibonacci nat -> nat
 }
 
 func unpack_complex complex -> real, real // I'm just making up types along the way
+// May have to do smth like complex -> Tuple<real, real>
 {
     unpack_complex(c) = (c.real, c.imaginary);
 }
@@ -59,3 +60,14 @@ impure func display_stuff int -> // impure functions can only be called from ano
     display_stuff(n) = print(n) // redundant but just to show how it works
     // we suppose print() is an impure function defined in stl
 }
+
+
+func add(int, int) -> int
+{
+    .(a, b) = a + b;
+}
+
+
+// (int, int) => int === int => int => int
+
+func successor = add(1);

@@ -7,30 +7,23 @@
 
 #include <string>
 #include "AST/asttree.h"
+#include "parser/parser_data.h"
 #include <vector>
 
 class Compiler
 {
 private:
-    void compile_file(const char*);
+    void compile_file(const std::string& file,  const std::shared_ptr<ParserData>&);
     std::vector<ASTTree> trees;
+    std::shared_ptr<ParserData> data;
 
-    bool finished;
 public:
-    template<typename... Args>
-    explicit Compiler(Args... files)
-    {
-        trees = {};
-        finished = false;
-            for(const auto f: {files...}) {
-                if(!finished)
-                    compile_file(f);
-            }
-    }
+    explicit Compiler(const std::vector<std::string>&);
 
     ASTTree& get_tree(size_t i = 0);
 
     std::string status();
+    std::shared_ptr<ParserData> get_parser_data();
 
     static llvm::Value* log_error_v(std::string);
 

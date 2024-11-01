@@ -36,33 +36,52 @@ void FunctionDeclaration::print() const {
         f_case.print();
 }
 
-llvm::Function *FunctionDeclaration::prototype_codegen() const{
-    std::vector<llvm::Type*> dom(domain.size(), llvm::Type::getInt32Ty(*parser_data::context));
+llvm::Function *FunctionDeclaration::prototype_codegen(const std::shared_ptr<ParserData>& parser_data) const{
+    std::vector<llvm::Type*> dom(domain.size(), llvm::Type::getInt32Ty(*parser_data->context));
     llvm::FunctionType* ft =
             llvm::FunctionType::get(llvm::Type::getInt32Ty(
-                    *parser_data::context), dom, false);
+                    *parser_data->context), dom, false);
     llvm::Function* f =
             llvm::Function::Create(ft,
                                    llvm::Function::ExternalLinkage,
-                                   name, *parser_data::module);
+                                   name, *parser_data->module);
 
-    unsigned char i = 0;
+    unsigned char i = 'a';
     for(auto& arg: f->args())
-        arg.setName(std::string(1, 'a' + i++)); // dont have names?? for now so im using letters of the alphabet
+        arg.setName(std::string(1, i++)); // dont have names?? for now so im using letters of the alphabet
     return f;
 }
 
-llvm::Function *FunctionDeclaration::codegen() const {
-    llvm::Function* f = parser_data::module->getFunction(name);
+llvm::Function *FunctionDeclaration::codegen(const std::shared_ptr<ParserData>& parser_data) const {
+    llvm::Function* f = parser_data->module->getFunction(name);
     if(!f)
-        f = prototype_codegen();
+        f = prototype_codegen(parser_data);
     // supposedly it can never be null
 
-    llvm::BasicBlock* bb = llvm::BasicBlock::Create(*parser_data::context,
-                                                   "entry", f);
-    parser_data::builder->SetInsertPoint(bb);
+    if(!f->empty()) {
+        std::cerr << "Error: Function redefinition!\n";
+        return nullptr;
+    }
 
 
+    llvm::BasicBlock* bb = llvm::BasicBlock::Create(*parser_data->context,
+                                                    "entry", f);
+    parser_data->builder->SetInsertPoint(bb);
+
+    parser_data->named_values.clear();
+    for(auto& arg: f->args())
+        parser_data->named_values[std::string(arg.getName())] = &arg;
+
+    if(llvm::Value* ret = cases.front().codegen(parser_data))
+    {
+        parser_data->builder->CreateRet(ret);
+
+        //TODO: check for type consistency
+        return f;
+    }
+    f->eraseFromParent();
+    std::cerr << "couldn't compile function :V\n";
+    return nullptr;
 }
 
 
@@ -80,15 +99,33 @@ void FunctionCase::print() const {
     std::cout << std::endl;
 }
 
-bool FunctionCase::input_match(std::vector<Token> tokens) const {
-    for (const auto& t: tokens)
+bool FunctionCase::input_match(const std::vector<Token>& tokens) const {
+
+    // tokens is the function call
+    // this->inputs is the one that can have variables and '0'
+
+    if(inputs.size() != tokens.size())
     {
-        if(t.get_token_kind() != UNDERSCORE || t.get_token_kind() != IDENTIFIER)
+        std::cerr << "DIFFERENT SIZES IN TOKENS FROM DECLARATION AND TOKENS FROM CALL\n"
+        << "CODE SHOULD NOT HAVE REACHED THIS\n";
+        return false;
+    }
+
+    for (const auto& [my_tok, call_tok]: llvm::zip(this->inputs, tokens))
+    {
+        if(my_tok.get_token_kind() != UNDERSCORE || my_tok.get_token_kind() != IDENTIFIER)
             return false;
-        if(t.get_token_kind() == UNDERSCORE)
+        if(my_tok.get_token_kind() == UNDERSCORE)
             continue;
         // it is an identifier now
 
+
     }
 
+    return false; // TODO: FINISH THIS (for now we just compiling first case)
+
+}
+
+llvm::Value *FunctionCase::codegen(const std::shared_ptr<ParserData>& parser_data) const {
+    return output->codegen(parser_data);
 }

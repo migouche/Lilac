@@ -17,6 +17,6 @@ void Tuple::print() const {
     std::cout << " ] ";
 }
 
-llvm::Value *Tuple::codegen() {
+llvm::Value *Tuple::codegen(const std::shared_ptr<ParserData>&) {
     return nullptr;
 }

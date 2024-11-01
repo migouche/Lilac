@@ -6,13 +6,14 @@
 #define LILAC_ASTVALUE_H
 
 #include <llvm/IR/Value.h>
+#include "parser/parser_data.h"
 
 
 class ASTValue
 {
 public:
     virtual void print() const = 0;
-    virtual llvm::Value* codegen() = 0;
+    virtual llvm::Value* codegen(const std::shared_ptr<ParserData>&) = 0;
 };
 
 #endif //LILAC_ASTVALUE_H
