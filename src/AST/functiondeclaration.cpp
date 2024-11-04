@@ -68,9 +68,11 @@ llvm::Function *FunctionDeclaration::codegen(const std::shared_ptr<ParserData>& 
                                                     "entry", f);
     parser_data->builder->SetInsertPoint(bb);
 
-    parser_data->named_values.clear();
+    parser_data->enter_scope();
+
+
     for(auto& arg: f->args())
-        parser_data->named_values[std::string(arg.getName())] = &arg;
+        parser_data->add_value(std::string(arg.getName()), &arg);
 
     if(llvm::Value* ret = cases.front().codegen(parser_data))
     {

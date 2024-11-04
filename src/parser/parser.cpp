@@ -6,6 +6,7 @@
 #include "parser/parser.h"
 #include "AST/ASTValues/literal.h"
 #include "AST/ASTValues/tuple.h"
+#include "AST/ASTValues/variable.h"
 #include <llvm/Support/ErrorHandling.h>
 
 void __l_fail(const std::string& message, const std::string& file, int line)
@@ -166,12 +167,15 @@ ast_tuple<FunctionCall> parse_function_call(const std::unique_ptr<Tokenizer>& to
     return {true, std::make_shared<FunctionCall>(name, arguments)};
 }
 
-ast_tuple<Literal> parse_expression(const std::unique_ptr<Tokenizer>& tokenizer)
+ast_tuple<ASTValue> parse_expression(const std::unique_ptr<Tokenizer>& tokenizer)
 {
     if(tokenizer->peek_token().get_token_kind() != IDENTIFIER)
         return {false, nullptr};
     auto t = tokenizer->get_token();
-    return {true, std::make_shared<Literal>(t)};
+    if(isdigit(t.get_value().at(0)))
+        return {true, std::make_shared<Literal>(t)};
+    else
+        return {true, std::make_shared<Variable>(t)};
 }
 
 std::shared_ptr<ASTValue> parse_value(const std::unique_ptr<Tokenizer>& tokenizer)

@@ -33,10 +33,10 @@ void ParserData::add_value(const std::string &name, llvm::Value *value) {
     named_values.back()[name] = value;
 }
 
-std::optional<llvm::Value*> ParserData::get_value(const std::string &name) {
+llvm::Value* ParserData::get_value(const std::string &name) {
     for (auto scope: named_values){
         if(scope.find(name) != scope.end())
             return scope[name];
     }
-    return std::nullopt;
+    return nullptr;
 }

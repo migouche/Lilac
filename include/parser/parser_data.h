@@ -29,7 +29,7 @@ public:
 
     void enter_scope();
     void exit_scope();
-    std::optional<llvm::Value*> get_value(const std::string& name);
+    llvm::Value* get_value(const std::string& name);
     void add_value(const std::string& name, llvm::Value* value);
 
     std::shared_ptr<llvm::Function> get_function(const std::string& name);

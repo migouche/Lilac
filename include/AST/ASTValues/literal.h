@@ -11,9 +11,9 @@
 class Literal: public ASTValue
 {
 private:
-    Token token;
+    std::string value;
 public:
-    explicit Literal(Token token);
+    explicit Literal(const Token& token);
 
     void print() const override;
     llvm::Value * codegen(const std::shared_ptr<ParserData>&) override;
