@@ -33,8 +33,10 @@ public:
     void add_value(const std::string& name, llvm::Value* value);
 
     std::shared_ptr<llvm::Function> get_function(const std::string& name);
+    llvm::Type* get_primitive(const std::string& name);
 private:
     std::vector<std::map<std::string, llvm::Value*>> named_values; // will be used as a stack (push and pop back)
+    std::map<std::string, llvm::Type*> primitives;
 };
 
 

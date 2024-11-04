@@ -193,12 +193,14 @@ std::shared_ptr<ASTValue> parse_value(const std::unique_ptr<Tokenizer>& tokenize
 }
 
 
-FunctionCase parse_function_case(const std::unique_ptr<Tokenizer>& tokenizer)
+FunctionCase parse_function_case(const std::unique_ptr<Tokenizer>& tokenizer, const FunctionHeader& header)
 {
         expect(tokenizer->get_token().get_token_kind() == IDENTIFIER &&
            tokenizer->get_token().get_token_kind() == OPEN_PARENS, // no beef inferring for now :(
            "function case must start with a function 'definition'");
-    expect(tokenizer->peek_token().get_token_kind() == IDENTIFIER, "function case must have at least one input");
+    expect(tokenizer->peek_token().get_token_kind() == IDENTIFIER || // with lazy evaluation, second condition being checked means first is false
+    (header.domain.size() == 1 && header.domain.front().get_value() == "void" && tokenizer->get_token().get_token_kind() == CLOSE_PARENS),
+           "function case must have at least one input or be of type void -> output");
 
     std::list<Token> inputs = {};
 
@@ -225,13 +227,13 @@ FunctionCase parse_function_case(const std::unique_ptr<Tokenizer>& tokenizer)
     return {inputs, _return};
 }
 
-FunctionBody parse_function_body(const std::unique_ptr<Tokenizer>& tokenizer)
+FunctionBody parse_function_body(const std::unique_ptr<Tokenizer>& tokenizer, const FunctionHeader& header)
 {
     expect(tokenizer->get_token().get_token_kind() == OPEN_CURLEY_BRACE, "function must have a body, got");
     std::list<FunctionCase> cases = {};
     while(tokenizer->peek_token().get_token_kind() != CLOSE_CURLEY_BRACE)
     {
-        cases.push_back(parse_function_case(tokenizer));
+        cases.push_back(parse_function_case(tokenizer, header));
     }
     expect(tokenizer->get_token().get_token_kind() == CLOSE_CURLEY_BRACE,
            "expected '}', although this should never happen :/");
@@ -246,7 +248,7 @@ std::shared_ptr<FunctionDeclaration> get_function_from_parts(const FunctionHeade
 std::shared_ptr<FunctionDeclaration> Parser::parse_function() {
     bool pure;
     auto header = get_function_header(tokenizer, &pure);
-    auto body = parse_function_body(tokenizer);
+    auto body = parse_function_body(tokenizer, header);
     return get_function_from_parts(header, body, pure);
 }
 

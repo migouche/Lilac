@@ -11,10 +11,15 @@ ParserData::ParserData() :  context(std::make_unique<llvm::LLVMContext>()),
                             module(std::make_unique<llvm::Module>("jit", *context)),
                             builder(std::make_unique<llvm::IRBuilder<>>(*context))
 {
-    std::cout << "Context initialized: " << (context != nullptr) << std::endl;
-    std::cout << "Module initialized: " << (module != nullptr) << std::endl;
-    std::cout << "Builder initialized: " << (builder != nullptr) << std::endl;
+    primitives = {
+            {"int", llvm::Type::getInt32Ty(*context)},
+            {"float", llvm::Type::getFloatTy(*context)},
+            {"double", llvm::Type::getDoubleTy(*context)},
+            {"void", llvm::Type::getVoidTy(*context)}
+    };
+
 }
+
 
 
 std::shared_ptr<llvm::Function> ParserData::get_function(const std::string &name) {
@@ -39,4 +44,8 @@ llvm::Value* ParserData::get_value(const std::string &name) {
             return scope[name];
     }
     return nullptr;
+}
+
+llvm::Type *ParserData::get_primitive(const std::string &name) {
+    return primitives[name];
 }

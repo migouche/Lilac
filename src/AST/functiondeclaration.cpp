@@ -37,7 +37,7 @@ void FunctionDeclaration::print() const {
 }
 
 llvm::Function *FunctionDeclaration::prototype_codegen(const std::shared_ptr<ParserData>& parser_data) const{
-    std::vector<llvm::Type*> dom(domain.size(), llvm::Type::getInt32Ty(*parser_data->context));
+    /*std::vector<llvm::Type*> dom(domain.size(), llvm::Type::getInt32Ty(*parser_data->context));
     llvm::FunctionType* ft =
             llvm::FunctionType::get(llvm::Type::getInt32Ty(
                     *parser_data->context), dom, false);
@@ -49,6 +49,21 @@ llvm::Function *FunctionDeclaration::prototype_codegen(const std::shared_ptr<Par
     unsigned char i = 'a';
     for(auto& arg: f->args())
         arg.setName(std::string(1, i++)); // dont have names?? for now so im using letters of the alphabet
+    return f;*/
+
+    std::vector<llvm::Type*> dom;
+    for(const auto& token: domain) {
+        if(token.get_value() != "void")
+            dom.push_back(parser_data->get_primitive(token.get_value()));
+    }
+    llvm::Type* returnType = parser_data->get_primitive(codomain.front().get_value());
+
+    llvm::FunctionType* ft = llvm::FunctionType::get(returnType, dom, false);
+    llvm::Function* f = llvm::Function::Create(ft, llvm::Function::ExternalLinkage, name, *parser_data->module);
+
+    unsigned char i = 'a';
+    for(auto& arg: f->args())
+        arg.setName(std::string(1, i++));
     return f;
 }
 

@@ -24,6 +24,8 @@ file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS src/*.cpp include/*.h)
 
 set(CMAKE_CXX_STANDARD 23)
 
+add_link_options(-fsanitize=address)
+
 
 add_executable(lilac src/main.cpp ${SOURCE_FILES} )
 

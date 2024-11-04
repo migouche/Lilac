@@ -2,3 +2,8 @@ func avg int, int -> int
 {
     avg(a, b) = div(sum(a, b), 2);
 }
+
+func main void -> int
+{
+    main() = avg(3, 6);
+}
