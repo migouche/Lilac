@@ -5,6 +5,7 @@
 #include "compiler/compiler.h"
 #include "parser/parser.h"
 #include "parser/parser_data.h"
+#include "compiler/llvm-primitives/llvmops.h"
 
 void Compiler::compile_file(const std::string& file,  const std::shared_ptr<ParserData>& parser_data) {
     Parser parser(file);
@@ -23,6 +24,8 @@ std::string Compiler::status() {
 Compiler::Compiler(const std::vector <std::string>& files) {
     //std::shared_ptr parser_data = std::make_shared<parser_data::ParserData>();
     data = std::make_shared<ParserData>();
+
+    LLVMOps::init(data);
 
     for(const auto& f: files)
         compile_file(f, data);

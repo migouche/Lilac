@@ -1,4 +1,4 @@
 func avg int, int -> int
 {
-    avg(a, b) = add(sum(a, b), 2);
+    avg(a, b) = div(sum(a, b), 2);
 }

@@ -19,6 +19,7 @@ int main() {
 
 #ifdef DEBUG_MODE
         c.get_parser_data()->module->print(llvm::errs(), nullptr);
+        c.get_parser_data()->module->print(llvm::outs(), nullptr);
 #endif
     }
     catch (const std::runtime_error& e)
