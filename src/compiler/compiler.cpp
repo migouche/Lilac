@@ -4,6 +4,7 @@
 #include <iostream>
 #include <llvm/TargetParser/Host.h>
 #include <llvm/Support/TargetSelect.h>
+#include <clang/Frontend/CompilerInstance.h>
 #include "compiler/compiler.h"
 #include "parser/parser.h"
 #include "parser/parser_data.h"
@@ -58,15 +59,17 @@ Compiler::Compiler(const std::vector <std::string>& files) {
         return;
     }
 
-    auto cpu = "generic";
-    auto features = "";
     llvm::TargetOptions opt;
 
-
     auto rm = std::optional<llvm::Reloc::Model>();
-    llvm::TargetMachine *targetMachine = target->createTargetMachine(target_triple, cpu, features, opt, rm);
+    llvm::TargetMachine *targetMachine = target->createTargetMachine(target_triple, "generic", "", opt, rm);
+
+    // mem input stream
+
 
     data->module->setDataLayout(targetMachine->createDataLayout());
+
+    /*
     std::string output_name = "output.out";
 
     std::error_code EC;
@@ -87,7 +90,28 @@ Compiler::Compiler(const std::vector <std::string>& files) {
     pass.run(*data->module);
     dest.flush();
     llvm::outs() << "Wrote " << output_name << "\n";
+     */
 
+    llvm::SmallVector<char, 0> buffer;
+    llvm::raw_svector_ostream dest(buffer);
+
+    llvm::legacy::PassManager pass;
+    llvm::CodeGenFileType ft = llvm::CodeGenFileType::ObjectFile;
+
+    if (targetMachine->addPassesToEmitFile(pass, dest, nullptr, ft)) {
+        llvm::errs() << "TargetMachine can't emit a file of this type";
+        return;
+    }
+
+    pass.run(*data->module);
+    llvm::outs() << "Wrote " << buffer.size() << " bytes\n";
+
+    std::string output_name = "output.out";
+
+    clang::CompilerInstance ci;
+    ci.createDiagnostics();
+
+    std::unique_ptr<clang::CompilerInvocation> invocation = std::make_unique<clang::CompilerInvocation>();
 }
 
 std::shared_ptr<ParserData> Compiler::get_parser_data() {
