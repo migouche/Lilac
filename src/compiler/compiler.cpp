@@ -10,7 +10,6 @@
 #include "parser/parser_data.h"
 #include "compiler/llvm-primitives/llvmops.h"
 #include "llvm/Target/TargetOptions.h"
-#include "llvm/Support/FileSystem.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/MC/TargetRegistry.h"
