@@ -15,6 +15,9 @@
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/IR/LegacyPassManager.h"
+#include "clang/Lex/PreprocessorOptions.h"
+#include <clang/CodeGen/CodeGenAction.h>
+
 
 void Compiler::compile_file(const std::string& file,  const std::shared_ptr<ParserData>& parser_data) {
     Parser parser(file);
@@ -106,12 +109,28 @@ Compiler::Compiler(const std::vector <std::string>& files) {
     pass.run(*data->module);
     llvm::outs() << "Wrote " << buffer.size() << " bytes\n";
 
-    std::string output_name = "output.out";
+    std::string output_name = "executable.out";
 
     clang::CompilerInstance ci;
     ci.createDiagnostics();
 
     std::unique_ptr<clang::CompilerInvocation> invocation = std::make_unique<clang::CompilerInvocation>();
+    clang::CompilerInvocation::CreateFromArgs(*invocation, {"-o", output_name.c_str()}, ci.getDiagnostics());
+    ci.setInvocation(std::move(invocation));
+
+    std::unique_ptr<llvm::MemoryBuffer> buffer_ptr = llvm::MemoryBuffer::getMemBuffer(llvm::StringRef(buffer.data(), buffer.size()), "output.out", false);
+    ci.getPreprocessorOpts().addRemappedFile("input.o", buffer_ptr.get());
+
+    ci.createFileManager();
+    ci.createSourceManager(ci.getFileManager());
+
+    clang::EmitObjAction action;
+    if(!ci.ExecuteAction(action))
+    {
+        llvm::errs() << "Error: could not emit object file\n";
+        return;
+    }
+    llvm::outs() << "Wrote " << output_name << "\n";
 }
 
 std::shared_ptr<ParserData> Compiler::get_parser_data() {
