@@ -11,15 +11,15 @@ int main() {
     //Parser parser("data/function.llc");
     try {
         std::vector<std::string> files = {"data/function.llc"};
-        Compiler c(files);
+        std::unique_ptr<Compiler> c = std::make_unique<Compiler>(files);
 
-        auto tree = c.get_tree();
+        auto tree = c->get_tree();
 
         tree.print();
 
 #ifdef DEBUG_MODE
-        c.get_parser_data()->module->print(llvm::errs(), nullptr);
-        c.get_parser_data()->module->print(llvm::outs(), nullptr);
+        c->get_parser_data()->module->print(llvm::errs(), nullptr);
+        c->get_parser_data()->module->print(llvm::outs(), nullptr);
 #endif
     }
     catch (const std::runtime_error& e)
@@ -29,7 +29,7 @@ int main() {
 
 
 #ifdef DEBUG_MODE
-
+/*
     std::cout << "out" << std::endl;
 
     Tokenizer tok("data/function.llc");
@@ -37,6 +37,7 @@ int main() {
     while(!tok.end_of_tokens()) {
         std::cout << tok.get_token() << " ";
     }
+    */
 
     // DEBUG CODE:
 

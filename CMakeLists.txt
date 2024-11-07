@@ -7,13 +7,13 @@ if(UNIX AND NOT APPLE)
 endif ()
 
 find_package(LLVM REQUIRED CONFIG)
-find_package(Clang REQUIRED CONFIG)
+#find_package(Clang REQUIRED CONFIG)
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
-message(STATUS "Found Clang ${Clang_PACKAGE_VERSION}")
-message(STATUS "Using ClangConfig.cmake in: ${Clang_DIR}")
+#message(STATUS "Found Clang ${Clang_PACKAGE_VERSION}")
+#message(STATUS "Using ClangConfig.cmake in: ${Clang_DIR}")
 
 set(LLVM_TARGETS_TO_BUILD "X86;x64" CACHE STRING "" FORCE)
 set(DLLVM_USE_LINDER lld)
@@ -34,7 +34,7 @@ file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS src/*.cpp include/*.h)
 
 set(CMAKE_CXX_STANDARD 23)
 
-add_link_options(-fsanitize=address)
+add_link_options(-fsanitize=address,undefined,leak,signed-integer-overflow,bounds)
 
 add_executable(lilac src/main.cpp ${SOURCE_FILES})
 
@@ -65,4 +65,4 @@ message(STATUS "CLANG_LIBS: ${CLANG_LIBS}")
 list(REMOVE_DUPLICATES LLVM_LIBS)
 list(REMOVE_DUPLICATES CLANG_LIBS)
 
-target_link_libraries(lilac ${LLVM_LIBS} ${CLANG_LIBS})
+target_link_libraries(lilac ${LLVM_LIBS})

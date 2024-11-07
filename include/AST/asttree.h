@@ -18,7 +18,7 @@ public:
     void print() const;
     ASTTree();
     explicit ASTTree(std::list<std::shared_ptr<FunctionDeclaration>>);
-    void codegen(const std::shared_ptr<ParserData>&) const;
+    void codegen(const std::unique_ptr<ParserData>&) const;
 };
 
 #endif //LILAC_AST_H

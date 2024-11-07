@@ -36,7 +36,7 @@ void FunctionDeclaration::print() const {
         f_case.print();
 }
 
-llvm::Function *FunctionDeclaration::prototype_codegen(const std::shared_ptr<ParserData>& parser_data) const{
+llvm::Function *FunctionDeclaration::prototype_codegen(const std::unique_ptr<ParserData>& parser_data) const{
     /*std::vector<llvm::Type*> dom(domain.size(), llvm::Type::getInt32Ty(*parser_data->context));
     llvm::FunctionType* ft =
             llvm::FunctionType::get(llvm::Type::getInt32Ty(
@@ -67,7 +67,7 @@ llvm::Function *FunctionDeclaration::prototype_codegen(const std::shared_ptr<Par
     return f;
 }
 
-llvm::Function *FunctionDeclaration::codegen(const std::shared_ptr<ParserData>& parser_data) const {
+llvm::Function *FunctionDeclaration::codegen(const std::unique_ptr<ParserData>& parser_data) const {
     llvm::Function* f = parser_data->module->getFunction(name);
     if(!f)
         f = prototype_codegen(parser_data);
@@ -143,6 +143,6 @@ bool FunctionCase::input_match(const std::vector<Token>& tokens) const {
 
 }
 
-llvm::Value *FunctionCase::codegen(const std::shared_ptr<ParserData>& parser_data) const {
+llvm::Value *FunctionCase::codegen(const std::unique_ptr<ParserData>& parser_data) const {
     return output->codegen(parser_data);
 }

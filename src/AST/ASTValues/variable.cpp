@@ -4,7 +4,7 @@
 #include <iostream>
 #include "AST/ASTValues/variable.h"
 
-llvm::Value *Variable::codegen(const std::shared_ptr<ParserData> &parser_data) {
+llvm::Value *Variable::codegen(const std::unique_ptr<ParserData> &parser_data) {
     return parser_data->get_value(name);
 }
 

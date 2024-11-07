@@ -18,7 +18,7 @@ struct FunctionCase
 
     [[nodiscard]] bool input_match(const std::vector<Token>&) const;
 
-    llvm::Value* codegen(const std::shared_ptr<ParserData>&) const;
+    llvm::Value* codegen(const std::unique_ptr<ParserData>&) const;
 
     void print() const;
 };
@@ -34,8 +34,8 @@ private:
 public:
     FunctionDeclaration(std::string , std::list<Token>, std::list<Token>, std::list<FunctionCase>, bool);
     void print() const;
-    [[nodiscard]] llvm::Function* codegen(const std::shared_ptr<ParserData>&) const;
-    [[nodiscard]] llvm::Function* prototype_codegen(const std::shared_ptr<ParserData>&) const;
+    [[nodiscard]] llvm::Function* codegen(const std::unique_ptr<ParserData>&) const;
+    [[nodiscard]] llvm::Function* prototype_codegen(const std::unique_ptr<ParserData>&) const;
 
 };
 

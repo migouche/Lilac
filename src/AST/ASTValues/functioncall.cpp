@@ -21,7 +21,7 @@ FunctionCall::FunctionCall(std::string  name, std::list<std::shared_ptr<ASTValue
     name(std::move(name)), arguments(std::move(arguments)){}
 
 
-llvm::Value *FunctionCall::codegen(const std::shared_ptr<ParserData>& parser_data) {
+llvm::Value *FunctionCall::codegen(const std::unique_ptr<ParserData>& parser_data) {
     llvm::Function *callee = parser_data->module->getFunction(name);
     if(!callee) {
         std::cerr << "Unknown reference to: " << name << std::endl;

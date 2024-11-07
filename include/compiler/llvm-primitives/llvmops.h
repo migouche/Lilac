@@ -12,11 +12,11 @@
 
 class LLVMOps {
 private:
-    static std::map<std::string, std::shared_ptr<llvm::Function>> primitive_functions;
+    static std::map<std::string, llvm::Function*> primitive_functions;
 public:
-    static void init(const std::shared_ptr<ParserData> &parser_data);
-    static std::shared_ptr<llvm::Function> find_function(const std::string &name);
+    static void init(const std::unique_ptr<ParserData> &parser_data);
+    static llvm::Function * find_function(const std::string &name);
 
-    //static void call_function(const std::string &name, const std::shared_ptr<ParserData> &parser_data);
+    //static void call_function(const std::string &name, const std::unique_ptr<ParserData> &parser_data);
 };
 #endif //LILAC_LLVMOPS_H

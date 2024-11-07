@@ -21,7 +21,7 @@ void ASTTree::add_child(const std::shared_ptr<FunctionDeclaration>& node) {
 
 ASTTree::ASTTree(): children(std::list<std::shared_ptr<FunctionDeclaration>>()) {}
 
-void ASTTree::codegen(const std::shared_ptr<ParserData>& data) const{
+void ASTTree::codegen(const std::unique_ptr<ParserData>& data) const{
     for(auto const& c: children)
         (void)c->codegen(data); // maybe??
 }

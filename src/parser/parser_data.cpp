@@ -22,7 +22,7 @@ ParserData::ParserData() :  context(std::make_unique<llvm::LLVMContext>()),
 
 
 
-std::shared_ptr<llvm::Function> ParserData::get_function(const std::string &name) {
+const llvm::Function * ParserData::get_function(const std::string &name) {
     return LLVMOps::find_function(name);
 }
 

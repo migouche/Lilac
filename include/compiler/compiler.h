@@ -13,9 +13,9 @@
 class Compiler
 {
 private:
-    void compile_file(const std::string& file,  const std::shared_ptr<ParserData>&);
+    void compile_file(const std::string& file,  const std::unique_ptr<ParserData>&);
     std::vector<ASTTree> trees;
-    std::shared_ptr<ParserData> data;
+    std::unique_ptr<ParserData> data;
 
 public:
     explicit Compiler(const std::vector<std::string>&);
@@ -23,7 +23,7 @@ public:
     ASTTree& get_tree(size_t i = 0);
 
     std::string status();
-    std::shared_ptr<ParserData> get_parser_data();
+    [[nodiscard]] const std::unique_ptr<ParserData> & get_parser_data() const;
 
     static llvm::Value* log_error_v(std::string);
 

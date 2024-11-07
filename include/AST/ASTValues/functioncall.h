@@ -17,7 +17,7 @@ public:
     FunctionCall(std::string name, std::list<std::shared_ptr<ASTValue>> arguments);
 
     void print() const override;
-    llvm::Value * codegen(const std::shared_ptr<ParserData>&) override;
+    llvm::Value * codegen(const std::unique_ptr<ParserData>&) override;
 };
 
 #endif //LILAC_FUNCTIONCALL_H

@@ -14,11 +14,11 @@
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/IR/LegacyPassManager.h"
-#include "clang/Lex/PreprocessorOptions.h"
-#include <clang/CodeGen/CodeGenAction.h>
+// #include "clang/Lex/PreprocessorOptions.h"
+// #include <clang/CodeGen/CodeGenAction.h>
 
 
-void Compiler::compile_file(const std::string& file,  const std::shared_ptr<ParserData>& parser_data) {
+void Compiler::compile_file(const std::string& file,  const std::unique_ptr<ParserData>& parser_data) {
     Parser parser(file);
     trees.push_back(parser.get_tree());
 
@@ -34,7 +34,7 @@ std::string Compiler::status() {
 
 Compiler::Compiler(const std::vector <std::string>& files) {
     //std::shared_ptr parser_data = std::make_shared<parser_data::ParserData>();
-    data = std::make_shared<ParserData>();
+    data = std::make_unique<ParserData>();
 
     LLVMOps::init(data);
 
@@ -64,12 +64,31 @@ Compiler::Compiler(const std::vector <std::string>& files) {
     llvm::TargetOptions opt;
 
     auto rm = std::optional<llvm::Reloc::Model>();
-    llvm::TargetMachine *targetMachine = target->createTargetMachine(target_triple, "generic", "", opt, rm);
+    std::unique_ptr<llvm::TargetMachine> targetMachine (target->createTargetMachine(target_triple, "generic", "", opt, rm));
 
     // mem input stream
 
-
     data->module->setDataLayout(targetMachine->createDataLayout());
+
+
+    std::string output_object_file = "output.o";
+    std::error_code EC;
+    llvm::raw_fd_ostream dest(output_object_file, EC, llvm::sys::fs::OF_None);
+    if (EC) {
+        llvm::errs() << "Could not open file: " << EC.message();
+        return;
+    }
+    llvm ::legacy::PassManager pass;
+    llvm::CodeGenFileType ft = llvm::CodeGenFileType::ObjectFile;
+
+    if (targetMachine->addPassesToEmitFile(pass, dest, nullptr, ft)) {
+        llvm::errs() << "TargetMachine can't emit a file of this type";
+        return;
+    }
+
+    pass.run(*data->module);
+    dest.flush();
+    llvm::outs() << "Wrote " << output_object_file << "\n";
 
     /*
     std::string output_name = "output.out";
@@ -92,7 +111,7 @@ Compiler::Compiler(const std::vector <std::string>& files) {
     pass.run(*data->module);
     dest.flush();
     llvm::outs() << "Wrote " << output_name << "\n";
-     */
+
 
     llvm::SmallVector<char, 0> buffer;
     llvm::raw_svector_ostream dest(buffer);
@@ -107,7 +126,7 @@ Compiler::Compiler(const std::vector <std::string>& files) {
 
     pass.run(*data->module);
     llvm::outs() << "Wrote " << buffer.size() << " bytes\n";
-
+    /*
     std::string output_name = "executable.out";
 
     clang::CompilerInstance ci;
@@ -130,9 +149,10 @@ Compiler::Compiler(const std::vector <std::string>& files) {
         return;
     }
     llvm::outs() << "Wrote " << output_name << "\n";
+     */
 }
 
-std::shared_ptr<ParserData> Compiler::get_parser_data() {
+const std::unique_ptr<ParserData> & Compiler::get_parser_data() const{
     return data;
 }
 
