@@ -59,6 +59,8 @@ std::ostream &operator<<(std::ostream &os, const Token& t) {
         return os << "IDENTIFIER: " << t.get_value();
     if(t.get_token_kind() == KEYWORD)
         return os << "KEYWORD: " << t.get_value();
+    if(t.get_token_kind() == LITERAL)
+        return os << "LITERAL: " << t.get_value();
     return os << "'" << get_string_from_token(t.get_token_kind()) << "'";
 }
 

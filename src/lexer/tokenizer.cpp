@@ -20,8 +20,12 @@ Tokenizer::Tokenizer(const std::string &path)
             tokens.emplace_back(get_token_kind(token), line, pos);
         else if(is_keyword(token))
             tokens.emplace_back(KEYWORD, token, line, pos);
-        else
-            tokens.emplace_back(IDENTIFIER, token, line, pos);
+        else {
+            if(isdigit(token.at(0)))
+                tokens.emplace_back(LITERAL, token, line, pos);
+            else
+                tokens.emplace_back(IDENTIFIER, token, line, pos);
+        }
     }
 }
 

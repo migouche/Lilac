@@ -29,7 +29,7 @@ int main() {
 
 
 #ifdef DEBUG_MODE
-/*
+
     std::cout << "out" << std::endl;
 
     Tokenizer tok("data/function.llc");
@@ -37,7 +37,7 @@ int main() {
     while(!tok.end_of_tokens()) {
         std::cout << tok.get_token() << " ";
     }
-    */
+
 
     // DEBUG CODE:
 

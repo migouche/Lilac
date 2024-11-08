@@ -36,6 +36,7 @@ enum TokenKind
     ERROR = 0,
     IDENTIFIER = 1,
     KEYWORD = 2,
+    LITERAL = 3,
     OPEN_PARENS = '(',
     CLOSE_PARENS = ')',
     OPEN_CURLEY_BRACE = '{',

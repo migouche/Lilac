@@ -169,13 +169,16 @@ ast_tuple<FunctionCall> parse_function_call(const std::unique_ptr<Tokenizer>& to
 
 ast_tuple<ASTValue> parse_expression(const std::unique_ptr<Tokenizer>& tokenizer)
 {
-    if(tokenizer->peek_token().get_token_kind() != IDENTIFIER)
+    if(tokenizer->peek_token().get_token_kind() != IDENTIFIER && tokenizer->peek_token().get_token_kind() != LITERAL && tokenizer->peek_token().get_token_kind() != UNDERSCORE)
         return {false, nullptr};
     auto t = tokenizer->get_token();
-    if(isdigit(t.get_value().at(0)))
-        return {true, std::make_shared<Literal>(t)};
-    else
+    if(t.get_token_kind() == IDENTIFIER)
         return {true, std::make_shared<Variable>(t)};
+    if(t.get_token_kind() == LITERAL)
+        return {true, std::make_shared<Literal>(t)};
+    if(t.get_token_kind() == UNDERSCORE)
+        throw std::runtime_error("underscore not implemented yet");
+    throw std::runtime_error("Couldn't parse expression");
 }
 
 std::shared_ptr<ASTValue> parse_value(const std::unique_ptr<Tokenizer>& tokenizer)
@@ -199,14 +202,21 @@ FunctionCase parse_function_case(const std::unique_ptr<Tokenizer>& tokenizer, co
            tokenizer->get_token().get_token_kind() == OPEN_PARENS, // no beef inferring for now :(
            "function case must start with a function 'definition'");
     expect(tokenizer->peek_token().get_token_kind() == IDENTIFIER || // with lazy evaluation, second condition being checked means first is false
+              tokenizer->peek_token().get_token_kind() == UNDERSCORE ||
+                tokenizer->peek_token().get_token_kind() == LITERAL ||
     (header.domain.size() == 1 && header.domain.front().get_value() == "void" && tokenizer->get_token().get_token_kind() == CLOSE_PARENS),
            "function case must have at least one input or be of type void -> output");
 
     std::list<Token> inputs = {};
 
-    while(tokenizer->peek_token().get_token_kind() == IDENTIFIER)
+    while(tokenizer->peek_token().get_token_kind() == IDENTIFIER ||
+            tokenizer->peek_token().get_token_kind() == UNDERSCORE ||
+            tokenizer->peek_token().get_token_kind() == LITERAL)
     {
-        expect(tokenizer->peek_token().get_token_kind() == IDENTIFIER, "argument must be an identifier");
+        expect(tokenizer->peek_token().get_token_kind() == IDENTIFIER ||
+               tokenizer->peek_token().get_token_kind() == UNDERSCORE ||
+               tokenizer->peek_token().get_token_kind() == LITERAL
+               , "argument must be an identifier, underscore or literal");
         inputs.push_back(tokenizer->get_token());
         if(tokenizer->peek_token().get_token_kind() == CLOSE_PARENS)
         {

@@ -61,7 +61,7 @@ llvm::Function *FunctionDeclaration::prototype_codegen(const std::unique_ptr<Par
     llvm::FunctionType* ft = llvm::FunctionType::get(returnType, dom, false);
     llvm::Function* f = llvm::Function::Create(ft, llvm::Function::ExternalLinkage, name, *parser_data->module);
 
-    unsigned char i = 'a';
+    char i = 'a';
     for(auto& arg: f->args())
         arg.setName(std::string(1, i++));
     return f;

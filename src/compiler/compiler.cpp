@@ -14,7 +14,7 @@
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/IR/LegacyPassManager.h"
-// #include "clang/Lex/PreprocessorOptions.h"
+//#include "clang/Lex/PreprocessorOptions.h"
 // #include <clang/CodeGen/CodeGenAction.h>
 
 
@@ -89,6 +89,7 @@ Compiler::Compiler(const std::vector <std::string>& files) {
     pass.run(*data->module);
     dest.flush();
     llvm::outs() << "Wrote " << output_object_file << "\n";
+
 
     /*
     std::string output_name = "output.out";

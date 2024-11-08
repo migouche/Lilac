@@ -6,18 +6,18 @@ if(UNIX AND NOT APPLE)
     include_directories(~/local/include)
 endif ()
 
-find_package(LLVM REQUIRED CONFIG)
-#find_package(Clang REQUIRED CONFIG)
+#find_package(LLVM REQUIRED CONFIG)
+find_package(Clang REQUIRED CONFIG)
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
-#message(STATUS "Found Clang ${Clang_PACKAGE_VERSION}")
-#message(STATUS "Using ClangConfig.cmake in: ${Clang_DIR}")
+message(STATUS "Found Clang ${Clang_PACKAGE_VERSION}")
+message(STATUS "Using ClangConfig.cmake in: ${Clang_DIR}")
 
 set(LLVM_TARGETS_TO_BUILD "X86;x64" CACHE STRING "" FORCE)
 set(DLLVM_USE_LINDER lld)
-set(DENABLE_LLVM_SHARED 1)
+set(BUILD_SHARED_LIBS  ON)
 add_definitions(-DLLVM_DISABLE_EXP_DEBUGINFO_ITERATORS)
 set(LLVM_BUILD_SHARED_LIBS ON)
 
@@ -28,7 +28,7 @@ message("clang include: ${CLANG_INCLUDE_DIRS}")
 include_directories(include)
 include_directories(${LLVM_INCLUDE_DIRS})
 
-add_definitions(${LLVM_DEFINITIONS})
+add_definitions(${CLANG_DEFINITIONS})
 
 file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS src/*.cpp include/*.h)
 
