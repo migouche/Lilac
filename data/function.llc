@@ -1,8 +1,11 @@
 func avg int, int -> int
 {
-    avg(a, 0) = div(a, 2);
+    // avg(a, 0) = div(a, 2);
     avg(a, b) = div(sum(a, b), 2);
 }
+
+
+
 
 func main void -> int
 {

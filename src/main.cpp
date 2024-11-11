@@ -11,7 +11,7 @@ int main() {
     //Parser parser("data/function.llc");
     try {
         std::vector<std::string> files = {"data/function.llc"};
-        std::unique_ptr<Compiler> c = std::make_unique<Compiler>(files);
+         std::unique_ptr<Compiler> c = std::make_unique<Compiler>(files);
 
         auto tree = c->get_tree();
 
