@@ -15,7 +15,11 @@
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "clang/Lex/PreprocessorOptions.h"
- #include <clang/CodeGen/CodeGenAction.h>
+#include <clang/CodeGen/CodeGenAction.h>
+#include <clang/Frontend/TextDiagnosticPrinter.h>
+#include <clang/Driver/Driver.h>
+#include <clang/Driver/Compilation.h>
+#include <clang/Driver/Job.h>
 #include <fstream>
 
 
@@ -33,6 +37,123 @@ std::string Compiler::status() {
     return "hey ho";
 }
 
+void write_object_file_to_disk(const std::unique_ptr<ParserData>& data, const std::string& output) {
+    llvm::InitializeAllTargetInfos();
+    llvm::InitializeAllTargets();
+    llvm::InitializeAllTargetMCs();
+    llvm::InitializeAllAsmPrinters();
+    llvm::InitializeAllAsmParsers();
+
+    std::string target_triple = llvm::sys::getDefaultTargetTriple();
+    std::string error;
+    const llvm::Target* target = llvm::TargetRegistry::lookupTarget(target_triple, error);
+
+    if(!target)
+    {
+        llvm::errs() << error;
+        return;
+    }
+
+    llvm::TargetOptions opt;
+    std::unique_ptr<llvm::TargetMachine> target_machine(target->createTargetMachine(target_triple, "generic", "", opt, llvm::Reloc::PIC_));
+
+    data->module->setDataLayout(target_machine->createDataLayout());
+    data->module->setTargetTriple(target_triple);
+
+    llvm::SmallVector<char, 0> buffer;
+    llvm::raw_svector_ostream dest(buffer);
+
+    llvm::legacy::PassManager pass;
+    if(target_machine->addPassesToEmitFile(pass, dest, nullptr, llvm::CodeGenFileType::ObjectFile))
+    {
+        llvm::errs() << "TargetMachine can't emit a file of this type";
+        return;
+    }else
+    {
+        pass.run(*data->module);
+        std::ofstream out(output, std::ios::binary);
+        out.write(buffer.data(), buffer.size());
+    }
+}
+
+std::unique_ptr<llvm::MemoryBuffer> generate_object_file(const std::unique_ptr<ParserData>& data)
+{
+    llvm::InitializeAllTargetInfos();
+    llvm::InitializeAllTargets();
+    llvm::InitializeAllTargetMCs();
+    llvm::InitializeAllAsmPrinters();
+    llvm::InitializeAllAsmParsers();
+
+    std::string target_triple = llvm::sys::getDefaultTargetTriple();
+    std::string error;
+    const llvm::Target* target = llvm::TargetRegistry::lookupTarget(target_triple, error);
+
+    if(!target)
+    {
+        llvm::errs() << error;
+        return nullptr;
+    }
+
+    llvm::TargetOptions opt;
+    std::unique_ptr<llvm::TargetMachine> target_machine(target->createTargetMachine(target_triple, "generic", "", opt, llvm::Reloc::PIC_));
+
+    data->module->setDataLayout(target_machine->createDataLayout());
+    data->module->setTargetTriple(target_triple);
+
+    llvm::SmallVector<char, 0> buffer;
+    llvm::raw_svector_ostream dest(buffer);
+
+    llvm::legacy::PassManager pass;
+    if(target_machine->addPassesToEmitFile(pass, dest, nullptr, llvm::CodeGenFileType::ObjectFile))
+    {
+        llvm::errs() << "TargetMachine can't emit a file of this type";
+        return nullptr;
+    }else
+    {
+        pass.run(*data->module);
+        //dest.flush();
+        return llvm::MemoryBuffer::getMemBufferCopy(llvm::StringRef(buffer.data(), buffer.size()));
+    }
+
+}
+
+void clang_compile(const std::unique_ptr<llvm::MemoryBuffer>& obj_file, const std::string& output) {
+    clang::CompilerInstance compiler;
+    compiler.createDiagnostics();
+
+    std::shared_ptr<clang::TextDiagnosticPrinter> diag_printer = std::make_shared<clang::TextDiagnosticPrinter>(llvm::errs(), &compiler.getDiagnosticOpts());
+    compiler.getDiagnostics().setClient(diag_printer.get(), false);
+
+    clang::CompilerInvocation::CreateFromArgs(compiler.getInvocation(), {"clang", "-o", output.c_str(), "-x", "ir", "-"}, compiler.getDiagnostics());
+
+    compiler.createFileManager();
+    compiler.createSourceManager(compiler.getFileManager());
+
+    if(!obj_file)
+    {
+        llvm::errs() << "Error generating object file\n";
+        return;
+    }
+    std::unique_ptr<llvm::MemoryBuffer> buffer_ptr = llvm::MemoryBuffer::getMemBufferCopy(obj_file->getBuffer(), "input.o");
+
+    if (!buffer_ptr) {
+        llvm::errs() << "Error creating memory buffer\n";
+        return;
+    }
+
+    compiler.getSourceManager().setMainFileID(compiler.getSourceManager().createFileID(std::move(buffer_ptr)));
+
+    compiler.createPreprocessor(clang::TU_Complete);
+    compiler.createASTContext();
+
+    clang::EmitObjAction action;
+    if (!compiler.ExecuteAction(action)) {
+        llvm::errs() << "Error compiling object file\n";
+        return;
+    }
+
+    llvm::outs() << "Wrote " << output << "\n";
+}
 Compiler::Compiler(const std::vector <std::string>& files) {
     //std::shared_ptr parser_data = std::make_shared<parser_data::ParserData>();
     data = std::make_unique<ParserData>();
@@ -47,54 +168,10 @@ Compiler::Compiler(const std::vector <std::string>& files) {
         t.codegen(data);
     }
 
-    llvm::InitializeNativeTarget();
-    llvm::InitializeNativeTargetAsmPrinter();
-    llvm::InitializeNativeTargetAsmParser();
+    //auto obj = generate_object_file(data);
+    //clang_compile(obj, "exec.out");
 
-    auto target_triple = llvm::sys::getDefaultTargetTriple();
-
-    std::string error;
-    llvm::StringRef target_triple_ref(target_triple);
-
-    const llvm::Target* target = llvm::TargetRegistry::lookupTarget(target_triple_ref, error);
-    if (!target) {
-        llvm::errs() << error;
-        return;
-    }
-
-    llvm::TargetOptions opt;
-    auto rm = std::optional<llvm::Reloc::Model>();
-    std::unique_ptr<llvm::TargetMachine> targetMachine(target->createTargetMachine(target_triple, "generic", "", opt, rm));
-    data->module->setDataLayout(targetMachine->createDataLayout());
-
-    llvm::SmallVector<char, 0> buffer;
-    llvm::raw_svector_ostream dest(buffer);
-
-    llvm::legacy::PassManager pass;
-    llvm::CodeGenFileType ft = llvm::CodeGenFileType::ObjectFile;
-
-    if (targetMachine->addPassesToEmitFile(pass, dest, nullptr, ft)) {
-        llvm::errs() << "TargetMachine can't emit a file of this type";
-        return;
-    }
-
-    pass.run(*data->module);
-    llvm::outs() << "Wrote " << buffer.size() << " bytes\n";
-
-    std::string obj_file = "output.o";
-    std::ofstream obj_stream(obj_file, std::ios::binary);
-    obj_stream.write(buffer.data(), buffer.size());
-    obj_stream.close();
-
-    std::string output_name = "executable.out";
-    std::string command = "clang++ " + obj_file + " -o " + output_name;
-    if (system(command.c_str()) != 0) {
-        llvm::errs() << "Error: could not link object file\n";
-        return;
-    }
-
-    llvm::outs() << "Wrote " << output_name << "\n";
-
+    write_object_file_to_disk(data, "exec.o");
 
 }
 
