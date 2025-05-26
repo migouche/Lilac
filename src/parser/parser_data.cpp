@@ -6,6 +6,7 @@
 #include "compiler/llvm-primitives/llvmops.h"
 
 #include <iostream>
+#include <llvm/IR/Module.h>
 
 ParserData::ParserData() :  context(std::make_unique<llvm::LLVMContext>()),
                             module(std::make_unique<llvm::Module>("jit", *context)),

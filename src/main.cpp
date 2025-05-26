@@ -5,6 +5,11 @@
 #include "debugmode.h" // remove this line to disable "debug mode"
 #include "parser/parser_data.h"
 
+#ifdef DEBUG_MODE
+#include <llvm/IR/Module.h>
+#endif
+
+
 
 int main() {
 

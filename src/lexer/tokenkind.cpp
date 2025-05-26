@@ -5,6 +5,8 @@
 #include <functional>
 #include "lexer/tokenkind.h"
 
+#include <algorithm>
+
 
 u64 get_multi_byte_from(const std::string& token)
 {
@@ -30,7 +32,7 @@ std::string get_string_from_token(TokenKind token)
         out += char(n % 0x100);
         n >>= 8;
     }
-    std::reverse(out.begin(), out.end());
+    std::ranges::reverse(out);
     return out;
 }
 

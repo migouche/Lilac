@@ -7,6 +7,7 @@
 
 #include <utility>
 #include <iostream>
+#include <llvm/IR/Module.h>
 
 
 FunctionDeclaration::FunctionDeclaration(std::string name,

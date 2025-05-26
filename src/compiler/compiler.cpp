@@ -6,6 +6,9 @@
 #include <llvm/Support/TargetSelect.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include "compiler/compiler.h"
+
+#include <llvm/IR/Module.h>
+
 #include "parser/parser.h"
 #include "parser/parser_data.h"
 #include "compiler/llvm-primitives/llvmops.h"

@@ -7,6 +7,8 @@
 #include "parser/parser_data.h"
 #include "AST/ASTValues/functioncall.h"
 
+#include <llvm/IR/Module.h>
+
 void FunctionCall::print() const {
     std::cout << name << " ( ";
     for(const auto& arg: arguments)
