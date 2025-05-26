@@ -12,7 +12,6 @@
 
 // Got from https://stackoverflow.com/a/39144576/13916511
 //implementation of user-defined literal _u64
-#include <cstdint>
 #include <string>
 
 
@@ -26,7 +25,7 @@ namespace details
     }
 }
 
-constexpr u64 operator "" _u64(char const *s, unsigned long)
+constexpr u64 operator ""_u64(char const *s, unsigned long)
 {
     return details::string_to_u64(s, 0);
 }

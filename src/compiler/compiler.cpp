@@ -67,7 +67,7 @@ Compiler::Compiler(const std::vector <std::string>& files) {
     llvm::TargetOptions opt;
 
     auto rm = std::optional<llvm::Reloc::Model>();
-    std::unique_ptr<llvm::TargetMachine> targetMachine (target->createTargetMachine(target_triple, "generic", "", opt, rm));
+    const std::unique_ptr<llvm::TargetMachine> targetMachine (target->createTargetMachine(target_triple, "generic", "", opt, rm));
 
     // mem input stream
 
@@ -93,67 +93,21 @@ Compiler::Compiler(const std::vector <std::string>& files) {
     dest.flush();
     llvm::outs() << "Wrote " << output_object_file << "\n";
 
+    // Link the object file to create an executable
+    std::string executable_file = "output";
+    std::string link_command = "clang++ output.o -o " + executable_file;
+    int link_result = std::system(link_command.c_str());
+    if (link_result != 0) {
+        llvm::errs() << "Linking failed with exit code " << link_result << "\n";
+    } else {
+        llvm::outs() << "Executable created: " << executable_file << "\n";
+        // delete the object file after linking
+        std::string delete_command = "rm output.o";
+        //std::system(delete_command.c_str());
 
-    /*
-    std::string output_name = "output.out";
-
-    std::error_code EC;
-    llvm::raw_fd_ostream dest(output_name, EC, llvm::sys::fs::OF_None);
-    if (EC) {
-        llvm::errs() << "Could not open file: " << EC.message();
-        return;
     }
 
-    llvm::legacy::PassManager pass;
-    llvm::CodeGenFileType ft = llvm::CodeGenFileType::ObjectFile;
 
-    if (targetMachine->addPassesToEmitFile(pass, dest, nullptr, ft)) {
-        llvm::errs() << "TargetMachine can't emit a file of this type";
-        return;
-    }
-
-    pass.run(*data->module);
-    dest.flush();
-    llvm::outs() << "Wrote " << output_name << "\n";
-
-
-    llvm::SmallVector<char, 0> buffer;
-    llvm::raw_svector_ostream dest(buffer);
-
-    llvm::legacy::PassManager pass;
-    llvm::CodeGenFileType ft = llvm::CodeGenFileType::ObjectFile;
-
-    if (targetMachine->addPassesToEmitFile(pass, dest, nullptr, ft)) {
-        llvm::errs() << "TargetMachine can't emit a file of this type";
-        return;
-    }
-
-    pass.run(*data->module);
-    llvm::outs() << "Wrote " << buffer.size() << " bytes\n";
-    /*
-    std::string output_name = "executable.out";
-
-    clang::CompilerInstance ci;
-    ci.createDiagnostics();
-
-    std::unique_ptr<clang::CompilerInvocation> invocation = std::make_unique<clang::CompilerInvocation>();
-    clang::CompilerInvocation::CreateFromArgs(*invocation, {"-o", output_name.c_str()}, ci.getDiagnostics());
-    ci.setInvocation(std::move(invocation));
-
-    std::unique_ptr<llvm::MemoryBuffer> buffer_ptr = llvm::MemoryBuffer::getMemBuffer(llvm::StringRef(buffer.data(), buffer.size()), "output.out", false);
-    ci.getPreprocessorOpts().addRemappedFile("input.o", buffer_ptr.get());
-
-    ci.createFileManager();
-    ci.createSourceManager(ci.getFileManager());
-
-    clang::EmitObjAction action;
-    if(!ci.ExecuteAction(action))
-    {
-        llvm::errs() << "Error: could not emit object file\n";
-        return;
-    }
-    llvm::outs() << "Wrote " << output_name << "\n";
-     */
 }
 
 const std::unique_ptr<ParserData> & Compiler::get_parser_data() const{
