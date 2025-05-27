@@ -9,8 +9,8 @@
 #include <llvm/IR/Module.h>
 
 ParserData::ParserData() :  context(std::make_unique<llvm::LLVMContext>()),
-                            module(std::make_unique<llvm::Module>("jit", *context)),
-                            builder(std::make_unique<llvm::IRBuilder<>>(*context))
+                            builder(std::make_unique<llvm::IRBuilder<>>(*context)),
+                            module(std::make_unique<llvm::Module>("jit", *context))
 {
     primitives = {
             {"int", llvm::Type::getInt32Ty(*context)},
@@ -39,9 +39,9 @@ void ParserData::add_value(const std::string &name, llvm::Value *value) {
     named_values.back()[name] = value;
 }
 
-llvm::Value* ParserData::get_value(const std::string &name) {
+llvm::Value* ParserData::get_value(const std::string &name) const {
     for (auto scope: named_values){
-        if(scope.find(name) != scope.end())
+        if(scope.contains(name))
             return scope[name];
     }
     return nullptr;

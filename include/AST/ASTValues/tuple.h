@@ -8,7 +8,7 @@
 #include <list>
 #include "AST/astvalue.h"
 
-class Tuple: public ASTValue
+class Tuple final : public ASTValue
 {
 public:
     explicit Tuple(std::list<std::shared_ptr<ASTValue>> elements); //

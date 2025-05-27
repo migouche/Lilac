@@ -24,10 +24,10 @@ public:
 
     void enter_scope();
     void exit_scope();
-    llvm::Value* get_value(const std::string& name);
+    [[nodiscard]] llvm::Value* get_value(const std::string& name) const;
     void add_value(const std::string& name, llvm::Value* value);
 
-    const llvm::Function * get_function(const std::string& name);
+     static const llvm::Function * get_function(const std::string& name);
     llvm::Type* get_primitive(const std::string& name);
 private:
     std::vector<std::map<std::string, llvm::Value*>> named_values; // will be used as a stack (push and pop back)

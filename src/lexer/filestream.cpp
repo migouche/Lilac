@@ -11,11 +11,11 @@ using namespace lexer_functions;
 
 bool is_operator(FileStream& file, std::string& out_string)
 {
-    if(! is_operator_character(char(file.peek())))
+    if(! is_operator_character(static_cast<char>(file.peek())))
         return false;
     std::string r;
 
-    while(!file.eof() && is_operator_character(char(file.peek())))
+    while(!file.eof() && is_operator_character(static_cast<char>(file.peek())))
     {
 
         char c;
@@ -57,7 +57,7 @@ std::string FileStream::get_token() {
     }
 
 
-    while(is_whitespace(char(peek())))
+    while(is_whitespace(static_cast<char>(peek())))
         get();
 
     //pos_buffer.emplace_front(pos, line);
@@ -74,9 +74,9 @@ std::string FileStream::get_token() {
 
 
 
-        if(c == '/' && char(peek()) == '/')
+        if(c == '/' && static_cast<char>(peek()) == '/')
         {
-            while(!eof() && !is_newline(char(peek())))
+            while(!eof() && !is_newline(static_cast<char>(peek())))
                 get(c);
             continue;
         }
@@ -150,7 +150,7 @@ std::pair<size_t, size_t> FileStream::get_pos()
 
 std::istream& FileStream::get(char &c) {
     pos++;
-    if(is_newline(char(peek()))) {
+    if(is_newline(static_cast<char>(peek()))) {
         pos = 0;
         line++;
     }
@@ -161,7 +161,7 @@ int FileStream::peek() {
     return file.peek();
 }
 
-std::istream &FileStream::putback(char c) {
+std::istream &FileStream::putback(const char c) {
     pos--;
     return file.putback(c);
 }
@@ -170,7 +170,7 @@ int FileStream::get() {
     return file.get();
 }
 
-bool FileStream::eof() {
+bool FileStream::eof() const {
     return file.eof();
 }
 

@@ -8,7 +8,7 @@
 #include <list>
 #include "AST/astvalue.h"
 
-class FunctionCall: public ASTValue
+class FunctionCall final : public ASTValue
 {
 private:
     std::string name;

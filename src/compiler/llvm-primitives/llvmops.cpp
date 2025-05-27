@@ -2,7 +2,6 @@
 // Created by migouche on 4/11/24.
 //
 #include "compiler/llvm-primitives/llvmops.h"
-#include "compiler/compilersettings.h"
 
 std::map<std::string, llvm::Function*> LLVMOps::primitive_functions;
 
@@ -15,10 +14,10 @@ llvm::Function* create_op(const std::unique_ptr<ParserData> &parser_data, const 
     llvm::Function* func = llvm::Function::Create(ft, llvm::Function::ExternalLinkage, name, *parser_data->module);
     //func->setCallingConv(llvm::CallingConv::Fast);
 
-    auto args = func->args();
+    const auto args = func->args();
     auto it = args.begin();
-    llvm::Value* a = &(*it++);
-    llvm::Value* b = &(*it);
+    llvm::Value* a = (it++);
+    llvm::Value* b = (it);
 
     llvm::BasicBlock* block = llvm::BasicBlock::Create(*parser_data->context, "entry", func);
     parser_data->builder->SetInsertPoint(block);
@@ -35,6 +34,9 @@ void LLVMOps::init(const std::unique_ptr<ParserData> &parser_data) {
 
     LLVMOps::primitive_functions["add"] = create_op(parser_data, "sum",
                                                     reinterpret_cast<BinaryOpMethod>(&llvm::IRBuilder<>::CreateAdd));
+
+    LLVMOps::primitive_functions["sub"] = create_op(parser_data, "sub",
+                                                    reinterpret_cast<BinaryOpMethod>(&llvm::IRBuilder<>::CreateSub));
 
     LLVMOps::primitive_functions["div"] = create_op(parser_data, "div",
                                                     reinterpret_cast<BinaryOpMethod>(&llvm::IRBuilder<>::CreateSDiv));

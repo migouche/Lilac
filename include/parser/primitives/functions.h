@@ -6,14 +6,14 @@
 #define LILAC_FUNCTIONS_H
 
 namespace primitive_functions{
-    constexpr const char* SUM = R"(
+    constexpr auto SUM = R"(
     define i32 @sum(i32 %a, i32 %b) {
         %c = add i32 %a, %b
         ret i32 %c
     }
     )";
 
-    constexpr const char* DIV = R"(
+    constexpr auto DIV = R"(
     define i32 @div(i32 %a, i32 %b) {
         %c = sdiv i32 %a, %b
         ret i32 %c

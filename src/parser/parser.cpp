@@ -7,9 +7,9 @@
 #include "AST/ASTValues/literal.h"
 #include "AST/ASTValues/tuple.h"
 #include "AST/ASTValues/variable.h"
-#include <llvm/Support/ErrorHandling.h>
 
-void __l_fail(const std::string& message, const std::string& file, int line)
+
+void __l_fail(const std::string& message, const std::string& file, const int line)
 {
     std::string out = "expect failed at ";
     out.append(file);
@@ -51,7 +51,7 @@ FunctionHeader get_function_header(const std::unique_ptr<Tokenizer>& tokenizer, 
 
 
     expect(tokenizer->peek_token().get_token_kind() == IDENTIFIER, "function name must be an identifier");
-    std::string name = tokenizer->get_token().get_value();
+    const std::string name = tokenizer->get_token().get_value();
 
     if(tokenizer->peek_token().get_token_kind() == CLOSE_PARENS)
     {
@@ -83,7 +83,7 @@ FunctionHeader get_function_header(const std::unique_ptr<Tokenizer>& tokenizer, 
     expect(tokenizer->get_token().get_token_kind() == get_multi_byte_token_kind("->"),
            "expected '->' to introduce return type");
 
-    if(tokenizer->peek_token().get_token_kind() == TokenKind('('))
+    if(tokenizer->peek_token().get_token_kind() == static_cast<TokenKind>('('))
     {
         codomain_parens = true;
         tokenizer->get_token();
@@ -149,7 +149,7 @@ ast_tuple<FunctionCall> parse_function_call(const std::unique_ptr<Tokenizer>& to
     && tokenizer->peek_token(1).get_token_kind() == OPEN_PARENS))
         return {false, nullptr};
 
-    auto t = tokenizer->get_token();
+    const auto t = tokenizer->get_token();
     expect(t.get_token_kind() == IDENTIFIER || t.is_primitive_operation(), "expected function name as identifier");
     expect(tokenizer->get_token().get_token_kind() == OPEN_PARENS, "expected function parens");
     auto name = t.get_token_kind() == IDENTIFIER ? t.get_value(): get_string_from_token(t.get_token_kind());
@@ -183,14 +183,11 @@ ast_tuple<ASTValue> parse_expression(const std::unique_ptr<Tokenizer>& tokenizer
 
 std::shared_ptr<ASTValue> parse_value(const std::unique_ptr<Tokenizer>& tokenizer)
 {
-    auto [is_tuple, tuple] = parse_tuple(tokenizer);
-    if(is_tuple)
+    if(auto [is_tuple, tuple] = parse_tuple(tokenizer); is_tuple)
         return tuple;
-    auto [is_function_call, function_call] = parse_function_call(tokenizer);
-    if(is_function_call)
+    if(auto [is_function_call, function_call] = parse_function_call(tokenizer); is_function_call)
         return function_call;
-    auto [is_expression, expression] = parse_expression(tokenizer);
-    if(is_expression)
+    if(auto [is_expression, expression] = parse_expression(tokenizer); is_expression)
         return expression;
     throw std::runtime_error("Couldn't parse value");
 }
@@ -230,9 +227,9 @@ FunctionCase parse_function_case(const std::unique_ptr<Tokenizer>& tokenizer, co
 
     //std::list<Token> operation = {};
 
-    auto _return = parse_value(tokenizer);
+    const auto _return = parse_value(tokenizer);
 
-    auto tok = tokenizer->get_token();
+    const auto tok = tokenizer->get_token();
     expect(tok.get_token_kind() == SEMICOLON, "expected semicolon, got " + get_string_from_token(tok.get_token_kind()) + tok.get_value());
     return {inputs, _return};
 }
@@ -255,15 +252,15 @@ std::shared_ptr<FunctionDeclaration> get_function_from_parts(const FunctionHeade
     return std::make_shared<FunctionDeclaration>(h.name, h.domain, h.codomain, b.cases, pure);
 }
 
-std::shared_ptr<FunctionDeclaration> Parser::parse_function() {
+std::shared_ptr<FunctionDeclaration> Parser::parse_function() const{
     bool pure;
-    auto header = get_function_header(tokenizer, &pure);
-    auto body = parse_function_body(tokenizer, header);
+    const auto header = get_function_header(tokenizer, &pure);
+    const auto body = parse_function_body(tokenizer, header);
     return get_function_from_parts(header, body, pure);
 }
 
-ASTTree Parser::get_tree() { // NOTE: must be a copy because compiler lifetime is much greater than parser
-    ASTTree tree = ASTTree();
+ASTTree Parser::get_tree() const { // NOTE: must be a copy because compiler lifetime is much greater than parser
+    auto tree = ASTTree();
     while(!tokenizer->end_of_tokens())
     {
         expect(tokenizer->peek_token().get_info() == std::make_pair(KEYWORD, std::string("func"))||

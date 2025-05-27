@@ -4,7 +4,15 @@ func avg int, int -> int
     avg(a, b) = div(sum(a, b), 2);
 }
 
+func fib int -> int
+{
+    fib(0) = 1;
+    fib(1) = 1;
+    fib(n) = sum(fib(sub(n, 1)), fib(sub(n, 2)));
+}
+
+
 func main void -> int
 {
-    main() = avg(3, 6);
+    main() = fib(8);
 }

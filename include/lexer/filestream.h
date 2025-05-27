@@ -22,7 +22,7 @@ private:
     int get();
     std::istream& putback(char c);
     int peek();
-    bool eof();
+    bool eof() const;
 
     std::list<std::pair<size_t, size_t>> pos_buffer;
 public:

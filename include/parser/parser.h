@@ -15,7 +15,7 @@ class Parser
 {
 private:
     std::unique_ptr<Tokenizer> tokenizer;
-    std::shared_ptr<FunctionDeclaration> parse_function();
+    [[nodiscard]] std::shared_ptr<FunctionDeclaration> parse_function() const;
     std::shared_ptr<FunctionCall> parse_call;
 
 
@@ -23,7 +23,7 @@ private:
 public:
 
     explicit Parser(const std::string&);
-    ASTTree get_tree();
+    [[nodiscard]] ASTTree get_tree() const;
 };
 
 #endif //LILAC_PARSER_H

@@ -22,7 +22,7 @@ public:
 
     ASTTree& get_tree(size_t i = 0);
 
-    std::string status();
+    static std::string status();
     [[nodiscard]] const std::unique_ptr<ParserData> & get_parser_data() const;
 
     static llvm::Value* log_error_v(std::string);

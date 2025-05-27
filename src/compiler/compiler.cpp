@@ -22,7 +22,7 @@
 
 
 void Compiler::compile_file(const std::string& file,  const std::unique_ptr<ParserData>& parser_data) {
-    Parser parser(file);
+    const Parser parser(file);
     trees.push_back(parser.get_tree());
 
 }
@@ -82,9 +82,8 @@ Compiler::Compiler(const std::vector <std::string>& files) {
         return;
     }
     llvm ::legacy::PassManager pass;
-    llvm::CodeGenFileType ft = llvm::CodeGenFileType::ObjectFile;
 
-    if (targetMachine->addPassesToEmitFile(pass, dest, nullptr, ft)) {
+    if (auto ft = llvm::CodeGenFileType::ObjectFile; targetMachine->addPassesToEmitFile(pass, dest, nullptr, ft)) {
         llvm::errs() << "TargetMachine can't emit a file of this type";
         return;
     }
@@ -96,8 +95,7 @@ Compiler::Compiler(const std::vector <std::string>& files) {
     // Link the object file to create an executable
     std::string executable_file = "output";
     std::string link_command = "clang++ output.o -o " + executable_file;
-    int link_result = std::system(link_command.c_str());
-    if (link_result != 0) {
+    if (int link_result = std::system(link_command.c_str()); link_result != 0) {
         llvm::errs() << "Linking failed with exit code " << link_result << "\n";
     } else {
         llvm::outs() << "Executable created: " << executable_file << "\n";

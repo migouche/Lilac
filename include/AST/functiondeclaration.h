@@ -16,9 +16,7 @@ struct FunctionCase
     //&std::list<Token> outputs; // TODO: must be an function call, for once functional programming saves us
     std::shared_ptr<ASTValue> output;
 
-    [[nodiscard]] bool input_match(const std::vector<Token>&) const;
-
-    llvm::Value* codegen(const std::unique_ptr<ParserData>&) const;
+    [[nodiscard]] llvm::Value* codegen(const std::unique_ptr<ParserData>&) const;
 
     void print() const;
 };

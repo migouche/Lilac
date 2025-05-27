@@ -10,7 +10,7 @@
 #include "AST/astvalue.h"
 #include "lexer/token.h"
 
-class Variable: public ASTValue{
+class Variable final : public ASTValue{
 public:
     explicit Variable(const Token&);
     llvm::Value* codegen(const std::unique_ptr<ParserData>&) override;

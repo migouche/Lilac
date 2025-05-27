@@ -8,7 +8,7 @@
 #include "AST/astvalue.h"
 #include "lexer/token.h"
 
-class Literal: public ASTValue
+class Literal final : public ASTValue
 {
 private:
     std::string value;

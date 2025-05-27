@@ -17,7 +17,7 @@
 
 namespace details
 {
-    constexpr u64 string_to_u64(char const *s, u64 v)
+    constexpr u64 string_to_u64(char const *s, const u64 v)
     {
         //in C++11, constexpr function body has to be one-line
         //though C++14 has relaxed this rule.
