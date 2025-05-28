@@ -11,8 +11,26 @@ func fib int -> int
     fib(n) = sum(fib(sub(n, 1)), fib(sub(n, 2)));
 }
 
+func is_zero int -> bool
+{
+    is_zero(0) = true;
+    is_zero(_) = false; // pattern matching for integers
+}
+
+func even int -> bool
+{
+    even(0) = true;
+    even(n) = odd(sub(n, 1));
+}
+
+func odd int -> bool
+{
+    odd(0) = false;
+    odd(n) = even(sub(n, 1));
+}
+
 
 func main void -> int
 {
-    main() = fib(8);
+    main() = is_zero(1);
 }

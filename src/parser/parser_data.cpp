@@ -16,7 +16,8 @@ ParserData::ParserData() :  context(std::make_unique<llvm::LLVMContext>()),
             {"int", llvm::Type::getInt32Ty(*context)},
             {"float", llvm::Type::getFloatTy(*context)},
             {"double", llvm::Type::getDoubleTy(*context)},
-            {"void", llvm::Type::getVoidTy(*context)}
+            {"void", llvm::Type::getVoidTy(*context)},
+            {"bool", llvm::Type::getInt1Ty(*context)}
     };
 }
 

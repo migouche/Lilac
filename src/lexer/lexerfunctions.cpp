@@ -26,7 +26,7 @@ bool lexer_functions::is_operator_token(const std::string &token)
 bool lexer_functions::is_keyword(const std::string &token)
 {
     return token == "if" || token == "else" || token == "while" || token == "for" || token == "do" || token == "func" ||
-           token == "when" || token == "enum" || token == "impure";
+           token == "when" || token == "enum" || token == "impure" || token == "true" || token == "false";
 }
 
 bool lexer_functions::is_whitespace(const char c)
@@ -36,8 +36,7 @@ bool lexer_functions::is_whitespace(const char c)
 
 bool lexer_functions::is_newline(const char c)
 {
-    auto b =  c == '\n' || c == '\r';
-    return b;
+    return c == '\n' || c == '\r';
 }
 
 bool lexer_functions::is_numeric(const char c)
@@ -50,12 +49,12 @@ bool lexer_functions::is_alpha(const char c)
     return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 }
 
-bool lexer_functions::is_alphanumeric(char c)
+bool lexer_functions::is_alphanumeric(const char c)
 {
     return is_alpha(c) || is_numeric(c);
 }
 
-bool lexer_functions::is_special_character(char c)
+bool lexer_functions::is_special_character(const char c)
 {
     return c == '(' || c == ')' || c == '{' || c == '}' || c == '[' || c == ']' || c == ',' || c == ';' || c == ':' ||
     c == '.';
@@ -66,12 +65,12 @@ bool lexer_functions::is_special_character(const std::string & s)
     return s.length() == 1 && is_special_character(s[0]);
 }
 
-bool lexer_functions::is_operator_character(char c)
+bool lexer_functions::is_operator_character(const char c)
 {
     return c == '+' || c == '-' || c == '*' || c == '/' || c == '%' || c == '>' || c == '<' || c == '=' || c == '!' ||
     c == '&' || c == '|' || c == '^' || c == '~';
 }
 
-bool lexer_functions::is_end_of_operator(char c) {
+bool lexer_functions::is_end_of_operator(const char c) {
     return c == '=';
 }
