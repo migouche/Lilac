@@ -36,14 +36,9 @@ struct FunctionHeader
 
 bool stack_has(const ScopeStack& stack, const std::string& token)
 {
-    for (const auto& scope : stack)
-    {
-        if (std::ranges::find(scope, token) != scope.end())
-        {
-            return true;
-        }
-    }
-    return false;
+    return std::ranges::any_of(stack, [&](const auto& scope) {
+        return std::ranges::find(scope, token) != scope.end();
+    });
 }
 
 
@@ -184,8 +179,10 @@ ast_tuple<FunctionCall> parse_function_call(const std::unique_ptr<Tokenizer>& to
 }
 
 ast_tuple<ASTValue> parse_expression(const std::unique_ptr<Tokenizer>& tokenizer, const ScopeStack& token_stack)
-{ // TODO: I'm sure I can do better, rework this pls :3
-    if(tokenizer->peek_token().get_token_kind() != IDENTIFIER && tokenizer->peek_token().get_token_kind() != LITERAL && tokenizer->peek_token().get_token_kind() != UNDERSCORE && !(tokenizer->peek_token().get_token_kind() == KEYWORD && (tokenizer->peek_token().get_value() == "true" || tokenizer->peek_token().get_value() == "false")))
+{
+    if (const auto peek_t = tokenizer->peek_token(); peek_t.get_token_kind() != IDENTIFIER && peek_t.get_token_kind() !=
+        LITERAL && peek_t.get_token_kind() != UNDERSCORE && !(tokenizer->peek_token().get_token_kind() == KEYWORD &&
+            (peek_t.get_value() == "true" || peek_t.get_value() == "false")))
         return {false, nullptr};
     auto t = tokenizer->get_token();
     if(t.get_token_kind() == IDENTIFIER) {
@@ -193,7 +190,7 @@ ast_tuple<ASTValue> parse_expression(const std::unique_ptr<Tokenizer>& tokenizer
             throw std::runtime_error("Identifier '" + t.get_value() + "' not found in scope");
         return {true, std::make_shared<Variable>(t)};
     }
-    if(t.get_token_kind() == LITERAL || (t.get_token_kind() == KEYWORD && (t.get_value() == "true" || t.get_value() == "false")))
+    if(t.get_token_kind() == LITERAL || t.get_token_kind() == KEYWORD) // no extra checks because they're done before
         return {true, std::make_shared<Literal>(t)};
     if(t.get_token_kind() == UNDERSCORE)
         throw std::runtime_error("underscore not implemented yet");
