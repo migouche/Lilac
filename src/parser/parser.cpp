@@ -280,7 +280,6 @@ std::shared_ptr<FunctionDeclaration> Parser::parse_function() {
     bool pure;
     const auto header = get_function_header(tokenizer, &pure);
     token_stack.back().push_back(header.name);
-    token_stack.emplace_back();
     const auto body = parse_function_body(tokenizer, header, token_stack);
     return get_function_from_parts(header, body, pure);
 }
@@ -296,6 +295,13 @@ ASTTree Parser::get_tree()  { // NOTE: must be a copy because compiler lifetime 
 
         tree.add_child(this->parse_function());
     }
+
+    std::cout << "Known funcs: ";
+    for (const auto& f: token_stack.back())  // last scope is the global scope, where all functions are defined
+    {
+        std::cout << f << " ";
+    }
+    std::cout << std::endl;
 
     return tree;
 }

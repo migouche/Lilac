@@ -44,6 +44,7 @@ Compiler::Compiler(const std::vector <std::string>& files) {
     for(const auto& f: files)
         compile_file(f, data);
 
+
     for(const auto& t: trees)
     {
         t.codegen(data);

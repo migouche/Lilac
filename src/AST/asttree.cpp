@@ -22,6 +22,9 @@ void ASTTree::add_child(const std::shared_ptr<FunctionDeclaration>& node) {
 ASTTree::ASTTree(): children(std::list<std::shared_ptr<FunctionDeclaration>>()) {}
 
 void ASTTree::codegen(const std::unique_ptr<ParserData>& data) const{
+    for (auto const& c: children)
+        (void)c->prototype_codegen(data); // if we do this first then double-recursion is fixed
+
     for(auto const& c: children)
         (void)c->codegen(data); // maybe??
 }

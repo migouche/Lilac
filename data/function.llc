@@ -32,5 +32,5 @@ func odd int -> bool
 
 func main void -> int
 {
-    main() = is_zero(1);
+    main() = odd(8);
 }
