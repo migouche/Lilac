@@ -18,7 +18,6 @@ ParserData::ParserData() :  context(std::make_unique<llvm::LLVMContext>()),
             {"double", llvm::Type::getDoubleTy(*context)},
             {"void", llvm::Type::getVoidTy(*context)}
     };
-
 }
 
 

@@ -4,12 +4,14 @@
 
 #include "lexer/lexerfunctions.h"
 
+#include "lexer/tokenkind.h"
+
 
 bool lexer_functions::is_operator_token(const std::string &token)
 {
     if(token.length() > 3)
         return false;
-    TokenKind kind = get_token_kind(token);
+    const TokenKind kind = get_token_kind(token);
     return kind == PLUS || kind == MINUS || kind == STAR || kind == SLASH || kind == PERCENT || kind == GREATER ||
            kind == LESS || kind == EQUAL || kind == EXCLAMATION || kind == AMPERSAND || kind == PIPE || kind == CARET ||
            kind == TILDE || kind == MINUS_GREATER || kind == PLUS_PLUS || kind == MINUS_MINUS || kind == PLUS_EQUAL ||
@@ -27,23 +29,23 @@ bool lexer_functions::is_keyword(const std::string &token)
            token == "when" || token == "enum" || token == "impure";
 }
 
-bool lexer_functions::is_whitespace(char c)
+bool lexer_functions::is_whitespace(const char c)
 {
     return is_newline(c) || c == ' ' || c == '\t';
 }
 
-bool lexer_functions::is_newline(char c)
+bool lexer_functions::is_newline(const char c)
 {
     auto b =  c == '\n' || c == '\r';
     return b;
 }
 
-bool lexer_functions::is_numeric(char c)
+bool lexer_functions::is_numeric(const char c)
 {
     return c >= '0' && c <= '9';
 }
 
-bool lexer_functions::is_alpha(char c)
+bool lexer_functions::is_alpha(const char c)
 {
     return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 }

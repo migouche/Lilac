@@ -22,7 +22,7 @@
 
 
 void Compiler::compile_file(const std::string& file,  const std::unique_ptr<ParserData>& parser_data) {
-    const Parser parser(file);
+    Parser parser(file);
     trees.push_back(parser.get_tree());
 
 }

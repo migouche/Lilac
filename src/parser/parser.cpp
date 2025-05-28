@@ -8,6 +8,7 @@
 #include "AST/ASTValues/tuple.h"
 #include "AST/ASTValues/variable.h"
 
+typedef std::vector<std::vector<std::string>> ScopeStack;
 
 void __l_fail(const std::string& message, const std::string& file, const int line)
 {
@@ -23,7 +24,8 @@ void __l_fail(const std::string& message, const std::string& file, const int lin
 #define expect(condition, message) static_cast<bool>(condition) ? void(0) : __l_fail(message,__FILE__, __LINE__)
 
 
-Parser::Parser(const std::string &path): tokenizer(std::make_unique<Tokenizer>(path)) {}
+
+Parser::Parser(const std::string &path): tokenizer(std::make_unique<Tokenizer>(path)), token_stack(ScopeStack()) {}
 
 struct FunctionHeader
 {
@@ -31,6 +33,19 @@ struct FunctionHeader
     std::list<Token> domain;
     std::list<Token> codomain;
 };
+
+bool stack_has(const ScopeStack& stack, const std::string& token)
+{
+    for (const auto& scope : stack)
+    {
+        if (std::ranges::find(scope, token) != scope.end())
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 
 FunctionHeader get_function_header(const std::unique_ptr<Tokenizer>& tokenizer, bool* pure)
 {
@@ -122,9 +137,9 @@ struct FunctionBody
 template<typename T>
 using ast_tuple = std::tuple<bool, std::shared_ptr<T>>;
 
-std::shared_ptr<ASTValue> parse_value(const std::unique_ptr<Tokenizer>& tokenizer);
+std::shared_ptr<ASTValue> parse_value(const std::unique_ptr<Tokenizer>& tokenizer, const ScopeStack& token_stack);
 
-ast_tuple<Tuple> parse_tuple(const std::unique_ptr<Tokenizer>& tokenizer)
+ast_tuple<Tuple> parse_tuple(const std::unique_ptr<Tokenizer>& tokenizer, const ScopeStack& token_stack)
 {
     if(tokenizer->peek_token().get_token_kind() != OPEN_SQUARE_BRACE)
         return {false, nullptr};
@@ -132,7 +147,7 @@ ast_tuple<Tuple> parse_tuple(const std::unique_ptr<Tokenizer>& tokenizer)
     std::list<std::shared_ptr<ASTValue>> elements;
     while(tokenizer->peek_token().get_token_kind() != CLOSE_SQUARE_BRACE)
     {
-        elements.push_back(parse_value(tokenizer));
+        elements.push_back(parse_value(tokenizer, token_stack));
         if(tokenizer->peek_token().get_token_kind() == COMMA)
             tokenizer->get_token(); // consume the comma;
         else
@@ -143,7 +158,8 @@ ast_tuple<Tuple> parse_tuple(const std::unique_ptr<Tokenizer>& tokenizer)
     return {true, std::make_shared<Tuple>(elements)};
 }
 
-ast_tuple<FunctionCall> parse_function_call(const std::unique_ptr<Tokenizer>& tokenizer)
+ast_tuple<FunctionCall> parse_function_call(const std::unique_ptr<Tokenizer>& tokenizer,
+                                            const ScopeStack& token_stack)
 {
     if(!((tokenizer->peek_token().get_token_kind() == IDENTIFIER || tokenizer->peek_token().is_primitive_operation())
     && tokenizer->peek_token(1).get_token_kind() == OPEN_PARENS))
@@ -156,7 +172,7 @@ ast_tuple<FunctionCall> parse_function_call(const std::unique_ptr<Tokenizer>& to
     std::list<std::shared_ptr<ASTValue>> arguments = {};
     while(tokenizer->peek_token().get_token_kind() != CLOSE_PARENS)
     {
-        arguments.push_back(parse_value(tokenizer));
+        arguments.push_back(parse_value(tokenizer, token_stack));
         if (tokenizer->peek_token().get_token_kind() == COMMA)
             tokenizer->get_token();
         else
@@ -167,13 +183,16 @@ ast_tuple<FunctionCall> parse_function_call(const std::unique_ptr<Tokenizer>& to
     return {true, std::make_shared<FunctionCall>(name, arguments)};
 }
 
-ast_tuple<ASTValue> parse_expression(const std::unique_ptr<Tokenizer>& tokenizer)
+ast_tuple<ASTValue> parse_expression(const std::unique_ptr<Tokenizer>& tokenizer, const ScopeStack& token_stack)
 {
     if(tokenizer->peek_token().get_token_kind() != IDENTIFIER && tokenizer->peek_token().get_token_kind() != LITERAL && tokenizer->peek_token().get_token_kind() != UNDERSCORE)
         return {false, nullptr};
     auto t = tokenizer->get_token();
-    if(t.get_token_kind() == IDENTIFIER)
+    if(t.get_token_kind() == IDENTIFIER) {
+        if (!stack_has(token_stack, t.get_value()))
+            throw std::runtime_error("Identifier '" + t.get_value() + "' not found in scope");
         return {true, std::make_shared<Variable>(t)};
+    }
     if(t.get_token_kind() == LITERAL)
         return {true, std::make_shared<Literal>(t)};
     if(t.get_token_kind() == UNDERSCORE)
@@ -181,20 +200,21 @@ ast_tuple<ASTValue> parse_expression(const std::unique_ptr<Tokenizer>& tokenizer
     throw std::runtime_error("Couldn't parse expression");
 }
 
-std::shared_ptr<ASTValue> parse_value(const std::unique_ptr<Tokenizer>& tokenizer)
+std::shared_ptr<ASTValue> parse_value(const std::unique_ptr<Tokenizer>& tokenizer, const ScopeStack& token_stack)
 {
-    if(auto [is_tuple, tuple] = parse_tuple(tokenizer); is_tuple)
+    if(auto [is_tuple, tuple] = parse_tuple(tokenizer, token_stack); is_tuple)
         return tuple;
-    if(auto [is_function_call, function_call] = parse_function_call(tokenizer); is_function_call)
+    if(auto [is_function_call, function_call] = parse_function_call(tokenizer, token_stack); is_function_call)
         return function_call;
-    if(auto [is_expression, expression] = parse_expression(tokenizer); is_expression)
+    if(auto [is_expression, expression] = parse_expression(tokenizer, token_stack); is_expression)
         return expression;
     throw std::runtime_error("Couldn't parse value");
 }
 
 
-FunctionCase parse_function_case(const std::unique_ptr<Tokenizer>& tokenizer, const FunctionHeader& header)
+FunctionCase parse_function_case(const std::unique_ptr<Tokenizer>& tokenizer, const FunctionHeader& header, ScopeStack& token_stack)
 {
+    token_stack.emplace_back();
         expect(tokenizer->get_token().get_token_kind() == IDENTIFIER &&
            tokenizer->get_token().get_token_kind() == OPEN_PARENS, // no beef inferring for now :(
            "function case must start with a function 'definition'");
@@ -227,20 +247,24 @@ FunctionCase parse_function_case(const std::unique_ptr<Tokenizer>& tokenizer, co
 
     //std::list<Token> operation = {};
 
-    const auto _return = parse_value(tokenizer);
+    for (const auto& input : inputs)
+        token_stack.back().push_back(input.get_value());
+
+    const auto _return = parse_value(tokenizer, token_stack);
 
     const auto tok = tokenizer->get_token();
     expect(tok.get_token_kind() == SEMICOLON, "expected semicolon, got " + get_string_from_token(tok.get_token_kind()) + tok.get_value());
+    token_stack.pop_back();
     return {inputs, _return};
 }
 
-FunctionBody parse_function_body(const std::unique_ptr<Tokenizer>& tokenizer, const FunctionHeader& header)
+FunctionBody parse_function_body(const std::unique_ptr<Tokenizer>& tokenizer, const FunctionHeader& header, ScopeStack& token_stack)
 {
     expect(tokenizer->get_token().get_token_kind() == OPEN_CURLEY_BRACE, "function must have a body, got");
     std::list<FunctionCase> cases = {};
     while(tokenizer->peek_token().get_token_kind() != CLOSE_CURLEY_BRACE)
     {
-        cases.push_back(parse_function_case(tokenizer, header));
+        cases.push_back(parse_function_case(tokenizer, header, token_stack));
     }
     expect(tokenizer->get_token().get_token_kind() == CLOSE_CURLEY_BRACE,
            "expected '}', although this should never happen :/");
@@ -252,22 +276,25 @@ std::shared_ptr<FunctionDeclaration> get_function_from_parts(const FunctionHeade
     return std::make_shared<FunctionDeclaration>(h.name, h.domain, h.codomain, b.cases, pure);
 }
 
-std::shared_ptr<FunctionDeclaration> Parser::parse_function() const{
+std::shared_ptr<FunctionDeclaration> Parser::parse_function() {
     bool pure;
     const auto header = get_function_header(tokenizer, &pure);
-    const auto body = parse_function_body(tokenizer, header);
+    token_stack.back().push_back(header.name);
+    token_stack.emplace_back();
+    const auto body = parse_function_body(tokenizer, header, token_stack);
     return get_function_from_parts(header, body, pure);
 }
 
-ASTTree Parser::get_tree() const { // NOTE: must be a copy because compiler lifetime is much greater than parser
+ASTTree Parser::get_tree()  { // NOTE: must be a copy because compiler lifetime is much greater than parser
     auto tree = ASTTree();
+    token_stack.emplace_back();
     while(!tokenizer->end_of_tokens())
     {
         expect(tokenizer->peek_token().get_info() == std::make_pair(KEYWORD, std::string("func"))||
            tokenizer->peek_token().get_info() == std::make_pair(KEYWORD, std::string("impure")),
                    "expected function declaration, got " + get_string_from_token(tokenizer->peek_token().get_token_kind()));
 
-        tree.add_child(parse_function());
+        tree.add_child(this->parse_function());
     }
 
     return tree;
