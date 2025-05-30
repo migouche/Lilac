@@ -29,8 +29,13 @@ func odd int -> bool
     odd(n) = even(sub(n, 1));
 }
 
+func big_operation int, int -> int
+{
+    big_operation(a, b) = sum(mul(a, sum(a, b)), mul(b, sum(sum(7, 3), b)));
+}
+
 
 func main void -> int
 {
-    main() = odd(8);
+    main() = big_operation(2, 3);
 }

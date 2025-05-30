@@ -32,14 +32,17 @@ llvm::Function* create_op(const std::unique_ptr<ParserData> &parser_data, const 
 void LLVMOps::init(const std::unique_ptr<ParserData> &parser_data) {
 
 
-    LLVMOps::primitive_functions["add"] = create_op(parser_data, "sum",
+    primitive_functions["add"] = create_op(parser_data, "sum",
                                                     reinterpret_cast<BinaryOpMethod>(&llvm::IRBuilder<>::CreateAdd));
 
-    LLVMOps::primitive_functions["sub"] = create_op(parser_data, "sub",
+    primitive_functions["sub"] = create_op(parser_data, "sub",
                                                     reinterpret_cast<BinaryOpMethod>(&llvm::IRBuilder<>::CreateSub));
 
-    LLVMOps::primitive_functions["div"] = create_op(parser_data, "div",
+    primitive_functions["div"] = create_op(parser_data, "div",
                                                     reinterpret_cast<BinaryOpMethod>(&llvm::IRBuilder<>::CreateSDiv));
+
+    primitive_functions["mul"] = create_op(parser_data, "mul",
+                                                    reinterpret_cast<BinaryOpMethod>(&llvm::IRBuilder<>::CreateMul));
 }
 
 llvm::Function * LLVMOps::find_function(const std::string &name) {
