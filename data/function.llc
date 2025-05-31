@@ -17,6 +17,8 @@ func is_zero int -> bool
     is_zero(_) = false; // pattern matching for integers
 }
 
+
+
 func even int -> bool
 {
     even(0) = true;
@@ -38,8 +40,17 @@ func factorial_if int -> int{ // yes, you can use pattern matching instead of if
     factorial_if(n) = if (is_zero(n)) 1 else mul(n, factorial_if(sub(n, 1)));
 }
 
+func nested_ifs int -> int
+{
+    nested_ifs(n) = if (even(n))
+        if (is_zero(n)) 0 else 2
+    else
+        if (eq(n, 1)) 1 else 3;
+
+}
+
 
 func main void -> int
 {
-    main() = factorial_if(5); // just to test the factorial function
+    main() = nested_ifs(4); // just to test that it works
 }

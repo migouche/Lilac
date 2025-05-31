@@ -43,6 +43,9 @@ void LLVMOps::init(const std::unique_ptr<ParserData> &parser_data) {
 
     primitive_functions["mul"] = create_op(parser_data, "mul",
                                                     reinterpret_cast<BinaryOpMethod>(&llvm::IRBuilder<>::CreateMul));
+
+    primitive_functions["eq"] = create_op(parser_data, "eq",
+                                                    &llvm::IRBuilder<>::CreateICmpEQ);
 }
 
 llvm::Function * LLVMOps::find_function(const std::string &name) {
