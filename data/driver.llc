@@ -71,3 +71,18 @@ func add(int, int) -> int
 // (int, int) => int === int => int => int
 
 func successor = add(1);
+
+
+// of course there will be ifs and similars:
+
+/*
+
+if (cond) ex1 else ex2
+
+*/
+
+func factorial_if (nat) -> nat // using ifs instead of pattern matching
+{
+    factorial_if(n) = if (n == 0) 1 else mul(n, factorial_if(sub(n, 1)));
+} // pretty easy for now, no {} because its just one expression
+

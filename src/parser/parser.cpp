@@ -4,6 +4,8 @@
 
 #include <iostream>
 #include "parser/parser.h"
+
+#include "AST/ASTValues/astif.h"
 #include "AST/ASTValues/literal.h"
 #include "AST/ASTValues/tuple.h"
 #include "AST/ASTValues/variable.h"
@@ -130,7 +132,7 @@ struct FunctionBody
 };
 
 template<typename T>
-using ast_tuple = std::tuple<bool, std::shared_ptr<T>>;
+using ast_tuple = std::pair<bool, std::shared_ptr<T>>;
 
 std::shared_ptr<ASTValue> parse_value(const std::unique_ptr<Tokenizer>& tokenizer, const ScopeStack& token_stack);
 
@@ -152,6 +154,22 @@ ast_tuple<Tuple> parse_tuple(const std::unique_ptr<Tokenizer>& tokenizer, const 
     expect(tokenizer->get_token().get_token_kind() == CLOSE_SQUARE_BRACE, "expected ']'");
     return {true, std::make_shared<Tuple>(elements)};
 }
+
+ast_tuple<ASTIf> parse_if(const std::unique_ptr<Tokenizer>& tokenizer, const ScopeStack& token_stack) {
+    if(tokenizer->peek_token().get_info() != std::make_pair(KEYWORD, "if"))
+        return {false, nullptr};
+    tokenizer->get_token(); // consume 'if'
+    expect(tokenizer->get_token().get_token_kind() == OPEN_PARENS, "expected '(' after 'if'");
+    std::shared_ptr<ASTValue> condition = parse_value(tokenizer, token_stack);
+    expect(tokenizer->get_token().get_token_kind() == CLOSE_PARENS, "expected ')' after condition");
+    std::shared_ptr<ASTValue> then_branch = parse_value(tokenizer, token_stack);
+    const auto else_token = tokenizer->get_token();
+    expect(else_token.get_token_kind() == KEYWORD && else_token.get_value() == "else", "expected 'else' after 'then' branch");
+    std::shared_ptr<ASTValue> else_branch = parse_value(tokenizer, token_stack);
+
+    return {true, std::make_shared<ASTIf>(condition, then_branch, else_branch)};
+}
+
 
 ast_tuple<FunctionCall> parse_function_call(const std::unique_ptr<Tokenizer>& tokenizer,
                                             const ScopeStack& token_stack)
@@ -205,6 +223,8 @@ std::shared_ptr<ASTValue> parse_value(const std::unique_ptr<Tokenizer>& tokenize
         return function_call;
     if(auto [is_expression, expression] = parse_expression(tokenizer, token_stack); is_expression)
         return expression;
+    if(auto [is_if, ast_if] = parse_if(tokenizer, token_stack); is_if)
+        return ast_if;
     throw std::runtime_error("Couldn't parse value");
 }
 

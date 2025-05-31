@@ -34,8 +34,12 @@ func big_operation int, int -> int
     big_operation(a, b) = sum(mul(a, sum(a, b)), mul(b, sum(sum(7, 3), b)));
 }
 
+func factorial_if int -> int{ // yes, you can use pattern matching instead of ifs, this is for testing
+    factorial_if(n) = if (is_zero(n)) 1 else mul(n, factorial_if(sub(n, 1)));
+}
+
 
 func main void -> int
 {
-    main() = big_operation(2, 3);
+    main() = factorial_if(5); // just to test the factorial function
 }
