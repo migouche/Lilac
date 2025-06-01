@@ -28,6 +28,7 @@ message("clang include: ${CLANG_INCLUDE_DIRS}")
 
 include_directories(include)
 include_directories(${LLVM_INCLUDE_DIRS})
+include_directories(libs)
 
 add_definitions(${CLANG_DEFINITIONS})
 

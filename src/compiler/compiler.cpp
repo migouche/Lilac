@@ -35,7 +35,7 @@ std::string Compiler::status() {
     return "hey ho";
 }
 
-Compiler::Compiler(const std::vector <std::string>& files) {
+Compiler::Compiler(const std::vector <std::string>& files, const std::string& output, int O, bool debug) {
     //std::shared_ptr parser_data = std::make_shared<parser_data::ParserData>();
     data = std::make_unique<ParserData>();
 
