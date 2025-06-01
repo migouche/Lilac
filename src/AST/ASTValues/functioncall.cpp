@@ -27,8 +27,9 @@ llvm::Value *FunctionCall::codegen(const std::unique_ptr<ParserData>& parser_dat
     llvm::Function *callee = parser_data->module->getFunction(name);
     if(!callee) {
         std::cerr << "Unknown reference to: " << name << std::endl;
-        return nullptr;
+        throw std::runtime_error("Unknown function call");
     }
+
     if(callee->arg_size() != arguments.size())
     {
         std::cerr << "Incorrect number of arguments, expected " << callee->arg_size()
