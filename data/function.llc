@@ -49,9 +49,12 @@ func nested_ifs int -> int
 
 }
 
-func err void -> int
-{
-    err() = foo();
+
+
+func factorial int -> int
+{ // testing syntactic sugar
+    .(0) = 1;
+    .(n) = mul(n, factorial(sub(n, 1)));
 }
 
 func main void -> int

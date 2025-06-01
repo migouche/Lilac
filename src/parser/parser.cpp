@@ -232,9 +232,16 @@ std::shared_ptr<ASTValue> parse_value(const std::unique_ptr<Tokenizer>& tokenize
 FunctionCase parse_function_case(const std::unique_ptr<Tokenizer>& tokenizer, const FunctionHeader& header, ScopeStack& token_stack)
 {
     token_stack.emplace_back();
-        expect(tokenizer->get_token().get_token_kind() == IDENTIFIER &&
-           tokenizer->get_token().get_token_kind() == OPEN_PARENS, // no beef inferring for now :(
-           "function case must start with a function 'definition'");
+    //expect((tokenizer->peek_token().get_token_kind() == IDENTIFIER || tokenizer->get_token().get_token_kind() == DOT) &&
+    //       tokenizer->get_token().get_token_kind() == OPEN_PARENS,
+    //       "function case must start with a function 'definition'");
+
+    const auto peek = tokenizer->peek_token();
+
+    expect(peek.get_token_kind() == IDENTIFIER || peek.get_token_kind() == DOT, "expected function name or dot before '('");
+    (void)tokenizer->get_token();
+    expect(tokenizer->get_token().get_token_kind() == OPEN_PARENS, "function case must start with '('");
+
     expect(tokenizer->peek_token().get_token_kind() == IDENTIFIER || // with lazy evaluation, second condition being checked means first is false
               tokenizer->peek_token().get_token_kind() == UNDERSCORE ||
                 tokenizer->peek_token().get_token_kind() == LITERAL ||
