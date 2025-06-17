@@ -82,6 +82,30 @@ llvm::Function* FunctionDeclaration::codegen(const std::unique_ptr<ParserData>& 
     std::vector<llvm::Value*> args;
     for (auto& a : f->args()) args.push_back(&a);
 
+    // only one case, we can optimize some stuff:
+    if (cases.size() == 1)
+    {
+        parser_data->enter_scope();
+        llvm::IRBuilder<> entry_builder(&f->getEntryBlock(), f->getEntryBlock().begin());
+
+        for (const auto& c: cases.front().inputs)
+        {
+            if (c.get_token_kind() != IDENTIFIER)
+            {
+                std::cerr << "error: identifier expected" << std::endl;
+            }
+            parser_data->add_value(c.get_value(), args.front(), llvm::Type::getInt32Ty(*parser_data->context), false);
+        }
+
+        llvm::Value* ret_v = cases.front().codegen(parser_data);
+        if (!ret_v) {
+            std::cerr << "Error in function case codegen." << std::endl;
+            return nullptr;
+        }
+        parser_data->builder->CreateRet(ret_v);
+        return f;
+    }
+
     // prepare blocks: one match block per case + a failure block
     std::vector<llvm::BasicBlock*> matchBlocks;
     for (size_t i = 0; i < cases.size(); ++i)

@@ -333,6 +333,28 @@ FunctionCase parse_function_case(const std::unique_ptr<Tokenizer>& tokenizer, co
 FunctionBody parse_function_body(const std::unique_ptr<Tokenizer>& tokenizer, const FunctionHeader& header, ScopeStack& token_stack)
 {
     expect(tokenizer->get_token().get_token_kind() == OPEN_CURLEY_BRACE, "function must have a body, got");
+
+    const auto peek = tokenizer->peek_token();
+    if (header.domain.size() == 1 && header.domain.front().get_value() == "void" &&
+        peek.get_token_kind() != DOT && !(peek.get_token_kind() == IDENTIFIER && peek.get_value() == header.name))
+    {
+        // just parse the value and construct an imaginary case
+        auto value = parse_value(tokenizer, token_stack);
+        expect(tokenizer->get_token().get_token_kind() == SEMICOLON,
+               "expected semicolon after function body, got " + get_string_from_token(tokenizer->get_token().get_token_kind()) +
+               tokenizer->get_token().get_value());
+        expect(tokenizer->get_token().get_token_kind() == CLOSE_CURLEY_BRACE,
+           "expected '}' to close function body, got " + get_string_from_token(tokenizer->get_token().get_token_kind()) +
+           tokenizer->get_token().get_value());
+
+        if (!value)
+        {
+            std::cerr << "error: function body must have a body, got" << std::endl;
+        }
+
+        return FunctionBody{std::list{FunctionCase{{}, value}}};
+    }
+
     std::list<FunctionCase> cases = {};
     while(tokenizer->peek_token().get_token_kind() != CLOSE_CURLEY_BRACE)
     {

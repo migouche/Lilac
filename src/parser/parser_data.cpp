@@ -21,8 +21,7 @@ ParserData::ParserData() :  context(std::make_unique<llvm::LLVMContext>()),
     };
 
     blocks = {};
-    named_values.emplace_back();
-    named_types.emplace_back();
+    enter_scope(); // start with a global scope
 }
 
 
@@ -32,36 +31,43 @@ const llvm::Function * ParserData::get_function(const std::string &name) {
 }
 
 void ParserData::enter_scope() {
-    named_values.emplace_back();
-    named_types.emplace_back();
+    values.emplace_back();
 }
 
 void ParserData::exit_scope() {
-    named_values.pop_back();
-    named_types.pop_back();
+    if (values.empty()) {
+        std::cerr << "Error: trying to exit scope when no scopes are present." << std::endl;
+        return;
+    }
+    values.pop_back();
 }
 
-void ParserData::add_value(const std::string &name, llvm::Value *value, llvm::Type *type, bool global) {
-    named_values.back()[name] = value;
+void ParserData::add_value(const std::string &name, llvm::Value *value, llvm::Type *type, const bool global) {
+    /*named_values.back()[name] = value;
     if (global)
         named_types.front()[name] = type; // global types are stored in the first scope
     else
-        named_types.back()[name] = type;
+        named_types.back()[name] = type;*/
+
+    if (global)
+        values.front()[name] = std::make_tuple(value, type); // global values are stored in the first scope
+    else
+        values.back()[name] = std::make_tuple(value, type);
 }
 
 llvm::Value* ParserData::get_value(const std::string &name) const {
-    for (auto scope: named_values){
+    for (auto scope: values){
         if(scope.contains(name))
-            return scope[name];
+            return std::get<llvm::Value*>(scope[name]);
     }
     return nullptr;
 }
 
 llvm::Type* ParserData::get_type(const std::string &name) const
 {
-    for (auto scope: named_types){
+    for (auto scope: values){
         if(scope.contains(name))
-            return scope[name];
+            return std::get<llvm::Type*>(scope[name]);
     }
     return nullptr;
 }
