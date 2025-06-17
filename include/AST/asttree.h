@@ -9,15 +9,18 @@
 #include "functiondeclaration.h"
 #include "parser/parser_data.h"
 
+
 class ASTTree
 {
+    using TopLevelDeclaration = std::variant<std::shared_ptr<FunctionDeclaration>, std::shared_ptr<ASTDefinition>>;
 private:
-    std::list<std::shared_ptr<FunctionDeclaration>> children = {};
+    std::list<TopLevelDeclaration> children = {};
 public:
     void add_child(const std::shared_ptr<FunctionDeclaration>&);
+    void add_child(const std::shared_ptr<ASTDefinition>&);
     void print() const;
     ASTTree();
-    explicit ASTTree(std::list<std::shared_ptr<FunctionDeclaration>>);
+    explicit ASTTree(std::list<TopLevelDeclaration>);
     void codegen(const std::unique_ptr<ParserData>&) const;
 };
 

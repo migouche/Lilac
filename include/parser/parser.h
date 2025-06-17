@@ -18,6 +18,7 @@ private:
     std::unique_ptr<Tokenizer> tokenizer;
     [[nodiscard]] std::shared_ptr<FunctionDeclaration> parse_function() ;
     std::shared_ptr<FunctionCall> parse_call;
+    std::shared_ptr<ASTDefinition> parse_definition() ;
     std::vector<std::vector<std::string>> token_stack;
 
 public:

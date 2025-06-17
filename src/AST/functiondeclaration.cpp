@@ -129,7 +129,7 @@ llvm::Function* FunctionDeclaration::codegen(const std::unique_ptr<ParserData>& 
         argIt = args.begin();
         for (const auto& tok : inputs) {
             if (tok.get_token_kind() == IDENTIFIER) {
-                parser_data->add_value(tok.get_value(), *argIt);
+                parser_data->add_value(tok.get_value(), *argIt, parser_data->get_primitive(tok.get_value()), false);
             }
             ++argIt;
         }

@@ -74,6 +74,12 @@ Compiler::Compiler(const std::vector <std::string>& files, const std::string& ou
 
     data->module->setDataLayout(targetMachine->createDataLayout());
 
+    // print the LLVM IR for debugging
+    if (debug) {
+        llvm::outs() << "Generated LLVM IR:\n";
+        data->module->print(llvm::outs(), nullptr);
+    }
+
 
     std::string output_object_file = "output.o";
     std::error_code EC;

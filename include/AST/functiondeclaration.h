@@ -6,6 +6,8 @@
 #define LILAC_FUNCTIONDECLARATION_H
 
 #include <list>
+
+#include "astdefinition.h"
 #include "lexer/token.h"
 #include "astvalue.h"
 #include "parser/parser_data.h"

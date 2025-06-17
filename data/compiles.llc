@@ -1,0 +1,65 @@
+// this file contains examples of valid code
+
+func avg int, int -> int
+{
+    avg(a, 0) = div(a, 2);
+    avg(a, b) = div(sum(a, b), 2);
+}
+
+func fib int -> int
+{
+    fib(0) = 1;
+    fib(1) = 1;
+    fib(n) = sum(fib(sub(n, 1)), fib(sub(n, 2)));
+}
+
+func is_zero int -> bool
+{
+    is_zero(0) = true;
+    is_zero(_) = false; // pattern matching for integers
+}
+
+
+
+func even int -> bool
+{
+    even(0) = true;
+    even(n) = odd(sub(n, 1));
+}
+
+func odd int -> bool
+{
+    odd(0) = false;
+    odd(n) = even(sub(n, 1));
+}
+
+func big_operation int, int -> int
+{
+    big_operation(a, b) = sum(mul(a, sum(a, b)), mul(b, sum(sum(7, 3), b)));
+}
+
+func factorial_if int -> int{ // yes, you can use pattern matching instead of ifs, this is for testing
+    factorial_if(n) = if (is_zero(n)) 1 else mul(n, factorial_if(sub(n, 1)));
+}
+
+func nested_ifs int -> int
+{
+    nested_ifs(n) = if (even(n))
+        if (is_zero(n)) 0 else 2
+    else
+        if (eq(n, 1)) 1 else 3;
+
+}
+
+
+
+func factorial int -> int
+{ // testing syntactic sugar
+    factorial(0) = 1;
+    factorial(n) = mul(n, factorial(sub(n, 1)));
+}
+
+func main void -> int
+{
+    main() = nested_ifs(4); // just to test that it works
+}

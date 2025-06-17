@@ -5,6 +5,7 @@
 #include <iostream>
 #include "parser/parser.h"
 
+#include "AST/ASTValues/astblock.h"
 #include "AST/ASTValues/astif.h"
 #include "AST/ASTValues/literal.h"
 #include "AST/ASTValues/tuple.h"
@@ -36,7 +37,7 @@ struct FunctionHeader
     std::list<Token> codomain;
 };
 
-bool stack_has(const ScopeStack& stack, const std::string& token)
+bool stack_has(ScopeStack& stack, const std::string& token)
 {
     return std::ranges::any_of(stack, [&](const auto& scope) {
         return std::ranges::find(scope, token) != scope.end();
@@ -134,9 +135,9 @@ struct FunctionBody
 template<typename T>
 using ast_tuple = std::pair<bool, std::shared_ptr<T>>;
 
-std::shared_ptr<ASTValue> parse_value(const std::unique_ptr<Tokenizer>& tokenizer, const ScopeStack& token_stack);
+std::shared_ptr<ASTValue> parse_value(const std::unique_ptr<Tokenizer>& tokenizer, ScopeStack& token_stack);
 
-ast_tuple<Tuple> parse_tuple(const std::unique_ptr<Tokenizer>& tokenizer, const ScopeStack& token_stack)
+ast_tuple<Tuple> parse_tuple(const std::unique_ptr<Tokenizer>& tokenizer, ScopeStack& token_stack)
 {
     if(tokenizer->peek_token().get_token_kind() != OPEN_SQUARE_BRACE)
         return {false, nullptr};
@@ -155,7 +156,7 @@ ast_tuple<Tuple> parse_tuple(const std::unique_ptr<Tokenizer>& tokenizer, const 
     return {true, std::make_shared<Tuple>(elements)};
 }
 
-ast_tuple<ASTIf> parse_if(const std::unique_ptr<Tokenizer>& tokenizer, const ScopeStack& token_stack) {
+ast_tuple<ASTIf> parse_if(const std::unique_ptr<Tokenizer>& tokenizer, ScopeStack& token_stack) {
     if(tokenizer->peek_token().get_info() != std::make_pair(KEYWORD, "if"))
         return {false, nullptr};
     tokenizer->get_token(); // consume 'if'
@@ -172,7 +173,7 @@ ast_tuple<ASTIf> parse_if(const std::unique_ptr<Tokenizer>& tokenizer, const Sco
 
 
 ast_tuple<FunctionCall> parse_function_call(const std::unique_ptr<Tokenizer>& tokenizer,
-                                            const ScopeStack& token_stack)
+ScopeStack& token_stack)
 {
     if(!((tokenizer->peek_token().get_token_kind() == IDENTIFIER || tokenizer->peek_token().is_primitive_operation())
     && tokenizer->peek_token(1).get_token_kind() == OPEN_PARENS))
@@ -196,7 +197,7 @@ ast_tuple<FunctionCall> parse_function_call(const std::unique_ptr<Tokenizer>& to
     return {true, std::make_shared<FunctionCall>(name, arguments)};
 }
 
-ast_tuple<ASTValue> parse_expression(const std::unique_ptr<Tokenizer>& tokenizer, const ScopeStack& token_stack)
+ast_tuple<ASTValue> parse_expression(const std::unique_ptr<Tokenizer>& tokenizer, ScopeStack& token_stack)
 {
     if (const auto peek_t = tokenizer->peek_token(); peek_t.get_token_kind() != IDENTIFIER && peek_t.get_token_kind() !=
         LITERAL && peek_t.get_token_kind() != UNDERSCORE && !(tokenizer->peek_token().get_token_kind() == KEYWORD &&
@@ -215,16 +216,63 @@ ast_tuple<ASTValue> parse_expression(const std::unique_ptr<Tokenizer>& tokenizer
     throw std::runtime_error("Couldn't parse expression");
 }
 
-std::shared_ptr<ASTValue> parse_value(const std::unique_ptr<Tokenizer>& tokenizer, const ScopeStack& token_stack)
+ast_tuple<ASTDefinition> _parse_definition(const std::unique_ptr<Tokenizer>& tokenizer, ScopeStack& scope_stack)
 {
-    if(auto [is_tuple, tuple] = parse_tuple(tokenizer, token_stack); is_tuple)
+    if (tokenizer->peek_token().get_token_kind() != KEYWORD || tokenizer->peek_token().get_value() != "let")
+        return {false, nullptr};
+
+    tokenizer->get_token(); // consume 'let'
+
+    const auto name = tokenizer->get_token();
+    expect(name.get_token_kind() == IDENTIFIER, "definition name must be an identifier");
+
+    expect(tokenizer->get_token().get_token_kind() == EQUAL, "definition must be assigned to something");
+
+    const auto value = parse_value(tokenizer, scope_stack);
+    expect(tokenizer->get_token().get_token_kind() == SEMICOLON, "expected semicolon after definition");
+
+    scope_stack.back().push_back(name.get_value());
+
+    return {true, std::make_shared<ASTDefinition>(name.get_value(), value, true)};
+}
+
+ast_tuple<ASTBlock> parse_block(const std::unique_ptr<Tokenizer>& tokenizer, ScopeStack& scope_stack)
+{
+    if (tokenizer->peek_token().get_token_kind() != OPEN_CURLEY_BRACE)
+        return {false, nullptr};
+    tokenizer->get_token(); // consume the '{'
+    scope_stack.emplace_back();
+    std::vector<std::shared_ptr<ASTDefinition>> definitions;
+    while (true)
+    {
+        if (const auto [is_def, def] = _parse_definition(tokenizer, scope_stack); is_def)
+            definitions.push_back(def);
+        else
+            break;
+    }
+
+    const auto tail_expression = parse_value(tokenizer, scope_stack);
+    scope_stack.pop_back();
+    expect(tokenizer->get_token().get_token_kind() == CLOSE_CURLEY_BRACE, "expected '}' to close block (Dont use ; on tail expression!)");
+    return {true, std::make_shared<ASTBlock>(definitions, tail_expression)};
+}
+
+std::shared_ptr<ASTValue> parse_value(const std::unique_ptr<Tokenizer>& tokenizer,  ScopeStack& token_stack)
+{
+    if(const auto [is_tuple, tuple] = parse_tuple(tokenizer, token_stack); is_tuple)
         return tuple;
-    if(auto [is_function_call, function_call] = parse_function_call(tokenizer, token_stack); is_function_call)
+    if(const auto [is_function_call, function_call] = parse_function_call(tokenizer, token_stack); is_function_call)
         return function_call;
-    if(auto [is_expression, expression] = parse_expression(tokenizer, token_stack); is_expression)
+    if(const auto [is_expression, expression] = parse_expression(tokenizer, token_stack); is_expression)
         return expression;
-    if(auto [is_if, ast_if] = parse_if(tokenizer, token_stack); is_if)
+    if(const auto [is_if, ast_if] = parse_if(tokenizer, token_stack); is_if)
         return ast_if;
+    if (const auto [is_block, block] = parse_block(tokenizer, token_stack); is_block)
+        return block;
+
+    const auto fail_token = tokenizer->peek_token();
+    std::cerr << "Failed to parse value at " << fail_token.get_line() << ":" << fail_token.get_pos()
+              << " with token '" << fail_token.get_value() << "' of kind " << get_string_from_token(fail_token.get_token_kind()) << std::endl;
     throw std::runtime_error("Couldn't parse value");
 }
 
@@ -308,16 +356,25 @@ std::shared_ptr<FunctionDeclaration> Parser::parse_function() {
     return get_function_from_parts(header, body, pure);
 }
 
+std::shared_ptr<ASTDefinition> Parser::parse_definition() {
+    const auto [is_def, def] = _parse_definition(tokenizer, token_stack);
+    if (!is_def)
+        throw std::runtime_error("Expected definition, got " + get_string_from_token(tokenizer->peek_token().get_token_kind()));
+    return def;
+}
+
 ASTTree Parser::get_tree()  { // NOTE: must be a copy because compiler lifetime is much greater than parser
     auto tree = ASTTree();
     token_stack.emplace_back();
     while(!tokenizer->end_of_tokens())
     {
-        expect(tokenizer->peek_token().get_info() == std::make_pair(KEYWORD, std::string("func"))||
-           tokenizer->peek_token().get_info() == std::make_pair(KEYWORD, std::string("impure")),
-                   "expected function declaration, got " + get_string_from_token(tokenizer->peek_token().get_token_kind()));
+        if (const auto peek = tokenizer->peek_token();
+            peek.get_info() == std::make_pair(KEYWORD, std::string("func")) ||
+            peek.get_info() == std::make_pair(KEYWORD, std::string("impure")))
+            tree.add_child(this->parse_function());
+        else if (peek.get_info() == std::make_pair(KEYWORD, std::string("let")))
+            tree.add_child(this->parse_definition());
 
-        tree.add_child(this->parse_function());
     }
 
     std::cout << "Known funcs: ";
