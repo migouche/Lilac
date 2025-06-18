@@ -61,10 +61,26 @@ llvm::Function *FunctionDeclaration::prototype_codegen(const std::unique_ptr<Par
 
     llvm::FunctionType* ft = llvm::FunctionType::get(returnType, dom, false);
     llvm::Function* f = llvm::Function::Create(ft, llvm::Function::ExternalLinkage, name, *parser_data->module);
-
-    char i = 'a';
-    for(auto& arg: f->args())
-        arg.setName(std::string(1, i++));
+    if (cases.size() <= 1) // use those names
+    {
+        int i = 0;
+        char n = 'a';
+        for (auto& token: cases.front().inputs)
+        {
+            if (token.get_value() != "void") {
+                if (token.get_token_kind() == IDENTIFIER) {
+                    f->getArg(i++)->setName(token.get_value());
+                } else {
+                    f->getArg(i++)->setName(std::string(1, n++));
+                }
+            }
+        }
+    } else
+    {
+        char i = 'a';
+        for(auto& arg: f->args())
+            arg.setName(std::string(1, i++));
+    }
     return f;
 }
 
@@ -83,26 +99,21 @@ llvm::Function* FunctionDeclaration::codegen(const std::unique_ptr<ParserData>& 
     for (auto& a : f->args()) args.push_back(&a);
 
     // only one case, we can optimize some stuff:
-    if (cases.size() == 1)
-    {
+    if (cases.size() == 1) {
         parser_data->enter_scope();
-        llvm::IRBuilder<> entry_builder(&f->getEntryBlock(), f->getEntryBlock().begin());
 
-        for (const auto& c: cases.front().inputs)
-        {
-            if (c.get_token_kind() != IDENTIFIER)
-            {
-                std::cerr << "error: identifier expected" << std::endl;
-            }
-            parser_data->add_value(c.get_value(), args.front(), llvm::Type::getInt32Ty(*parser_data->context), false);
+        // register each SSA argument directly
+        for (auto &arg : f->args()) {
+            parser_data->add_value(arg.getName().str(),
+                                   &arg,                // the SSA value
+                                   arg.getType(),
+                                   /*isGlobal=*/false);
         }
 
-        llvm::Value* ret_v = cases.front().codegen(parser_data);
-        if (!ret_v) {
-            std::cerr << "Error in function case codegen." << std::endl;
-            return nullptr;
-        }
-        parser_data->builder->CreateRet(ret_v);
+        // codegen the body & return
+        llvm::Value *retV = cases.front().codegen(parser_data);
+        parser_data->builder->CreateRet(retV);
+        parser_data->exit_scope();
         return f;
     }
 
