@@ -1,3 +1,16 @@
 func main void -> int {
-    0;
+    {
+        let a = {
+            let x = 8;
+            let y = 7;
+            mul(x, y)
+        };
+        let b = {
+            let m = 9;
+            let n = 4;
+            mul(m, n)
+        };
+        let add = sum(a, b);
+        sum(add, 1)
+    };
 }

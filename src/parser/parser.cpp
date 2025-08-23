@@ -216,7 +216,7 @@ ast_tuple<ASTValue> parse_expression(const std::unique_ptr<Tokenizer>& tokenizer
     throw std::runtime_error("Couldn't parse expression");
 }
 
-ast_tuple<ASTDefinition> _parse_definition(const std::unique_ptr<Tokenizer>& tokenizer, ScopeStack& scope_stack)
+ast_tuple<ASTDefinition> internal_parse_definition(const std::unique_ptr<Tokenizer>& tokenizer, ScopeStack& scope_stack)
 {
     if (tokenizer->peek_token().get_token_kind() != KEYWORD || tokenizer->peek_token().get_value() != "let")
         return {false, nullptr};
@@ -233,7 +233,10 @@ ast_tuple<ASTDefinition> _parse_definition(const std::unique_ptr<Tokenizer>& tok
 
     scope_stack.back().push_back(name.get_value());
 
-    return {true, std::make_shared<ASTDefinition>(name.get_value(), value, true)};
+    // check if its global (if the stack has size > 1, then it is a local definition)
+    auto is_global = scope_stack.size() <= 1;
+
+    return {true, std::make_shared<ASTDefinition>(name.get_value(), value, is_global)};
 }
 
 ast_tuple<ASTBlock> parse_block(const std::unique_ptr<Tokenizer>& tokenizer, ScopeStack& scope_stack)
@@ -245,7 +248,7 @@ ast_tuple<ASTBlock> parse_block(const std::unique_ptr<Tokenizer>& tokenizer, Sco
     std::vector<std::shared_ptr<ASTDefinition>> definitions;
     while (true)
     {
-        if (const auto [is_def, def] = _parse_definition(tokenizer, scope_stack); is_def)
+        if (const auto [is_def, def] = internal_parse_definition(tokenizer, scope_stack); is_def)
             definitions.push_back(def);
         else
             break;
@@ -379,7 +382,7 @@ std::shared_ptr<FunctionDeclaration> Parser::parse_function() {
 }
 
 std::shared_ptr<ASTDefinition> Parser::parse_definition() {
-    const auto [is_def, def] = _parse_definition(tokenizer, token_stack);
+    const auto [is_def, def] = internal_parse_definition(tokenizer, token_stack);
     if (!is_def)
         throw std::runtime_error("Expected definition, got " + get_string_from_token(tokenizer->peek_token().get_token_kind()));
     return def;

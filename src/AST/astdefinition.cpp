@@ -18,56 +18,45 @@ void ASTDefinition::print() const
 
 llvm::Value* ASTDefinition::codegen(const std::unique_ptr<ParserData>& parser_data) const
 {
+    auto& builder = *parser_data->builder;
+    llvm::Module* module = parser_data->module.get();
 
-    if (global)
-    {
-        // 1. Generate the initializer value
-        llvm::Value* initVal = value->codegen(parser_data);
-        if (!initVal) return nullptr;
+    // Generate the initializer
+    llvm::Value* initVal = value->codegen(parser_data);
+    if (!initVal) return nullptr;
 
-        // 2. It must be a Constant to use as a global initializer
+    if (global) {
+        // Must be a constant for a global
         auto* constInit = llvm::dyn_cast<llvm::Constant>(initVal);
         if (!constInit) {
-            std::cerr << "Global initializer '" << name << "' is not a constant\n";
+            llvm::errs() << "Global initializer '" << name << "' is not a constant\n";
             return nullptr;
         }
 
-        // 3. Create the GlobalVariable
-        llvm::GlobalVariable* gv = new llvm::GlobalVariable(
-            *parser_data->module,               // parent module
-            initVal->getType(),                 // value type
-            /*isConstant=*/false,               // mutable
-            llvm::GlobalValue::ExternalLinkage,
-            constInit,                          // initializer
-            name                                 // global name
-        );
+        // Create or update the global variable
+        llvm::GlobalVariable* gv = module->getGlobalVariable(name);
+        if (!gv) {
+            gv = new llvm::GlobalVariable(
+                *module,
+                initVal->getType(),
+                /*isConstant=*/false,
+                llvm::GlobalValue::ExternalLinkage,
+                constInit,
+                name
+            );
+        } else {
+            gv->setInitializer(constInit);
+        }
 
-        // 4. Register in symbol table and return
-        parser_data->add_value(name, gv, initVal->getType(), true);
+        parser_data->add_value(name, gv, initVal->getType(), /*global=*/true);
         return gv;
-    }
-    else
-    {
-        // No clue if this works yet
-        llvm::IRBuilder<>& builder = *parser_data->builder;
-
-        // 1. Compute the RHS value
-        llvm::Value* initVal = value->codegen(parser_data);
-        if (!initVal) return nullptr;
-
-        // 2. Create an alloca in the entry block for the variable
-        llvm::Function* function = builder.GetInsertBlock()->getParent();
-        llvm::IRBuilder<> entryBuilder(&function->getEntryBlock(),
-                                       function->getEntryBlock().begin());
-        llvm::AllocaInst* alloca = entryBuilder.CreateAlloca(initVal->getType(), nullptr, name);
-
-        // 3. Store the initial value into the alloca
+    } else {
+        // Local alloca in entry block
+        llvm::Function* fn = builder.GetInsertBlock()->getParent();
+        llvm::IRBuilder<> tmpB(&fn->getEntryBlock(), fn->getEntryBlock().begin());
+        llvm::AllocaInst* alloca = tmpB.CreateAlloca(initVal->getType(), /*arraySize=*/nullptr, name);
         builder.CreateStore(initVal, alloca);
-
-        // 4. Register the variable in the symbol table
-        parser_data->add_value(name, alloca, initVal->getType(), false);
-
-        // 5. Return the alloca (or you could return initVal)
+        parser_data->add_value(name, alloca, initVal->getType(), /*global=*/false);
         return alloca;
     }
 }

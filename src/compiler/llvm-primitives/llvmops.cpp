@@ -46,6 +46,18 @@ void LLVMOps::init(const std::unique_ptr<ParserData> &parser_data) {
 
     primitive_functions["eq"] = create_op(parser_data, "eq",
                                                     &llvm::IRBuilder<>::CreateICmpEQ);
+
+    primitive_functions["gt"] = create_op(parser_data, "gt",
+                                                    &llvm::IRBuilder<>::CreateICmpSGT);
+
+    primitive_functions["lt"] = create_op(parser_data, "lt",
+                                                    &llvm::IRBuilder<>::CreateICmpSLT);
+
+    primitive_functions["ge"] = create_op(parser_data, "ge",
+                                                    &llvm::IRBuilder<>::CreateICmpSGE);
+
+    primitive_functions["le"] = create_op(parser_data, "le",
+                                                    &llvm::IRBuilder<>::CreateICmpSLE);
 }
 
 llvm::Function * LLVMOps::find_function(const std::string &name) {
