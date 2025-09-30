@@ -1,5 +1,5 @@
 func main void -> int {
-    {
+
         let a = {
             let x = 8;
             let y = 7;
@@ -12,5 +12,5 @@ func main void -> int {
         };
         let add = sum(a, b);
         sum(add, 1)
-    };
+
 }

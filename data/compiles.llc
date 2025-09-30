@@ -66,6 +66,23 @@ func five void -> int {
     5;
 }
 
+func test_blocks void -> int {
+    {
+        let a = {
+            let x = 8;
+            let y = 7;
+            mul(x, y)
+        };
+        let b = {
+            let m = 9;
+            let n = 4;
+            mul(m, n)
+        };
+        let add = sum(a, b);
+        sum(add, 1)
+    };
+}
+
 func main void -> int
 {
     main() = nested_ifs(4); // just to test that it works

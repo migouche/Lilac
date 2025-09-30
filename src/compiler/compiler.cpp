@@ -100,12 +100,12 @@ Compiler::Compiler(const std::vector <std::string>& files, const std::string& ou
     llvm::outs() << "Wrote " << output_object_file << "\n";
 
     // Link the object file to create an executable
-    std::string executable_file = "output";
-    std::string link_command = "clang++ output.o -o " + executable_file;
+    //std::string executable_file = "output";
+    std::string link_command = "clang++ output.o -o " + output;
     if (int link_result = std::system(link_command.c_str()); link_result != 0) {
         llvm::errs() << "Linking failed with exit code " << link_result << "\n";
     } else {
-        llvm::outs() << "Executable created: " << executable_file << "\n";
+        llvm::outs() << "Executable created: " << output << "\n";
         // delete the object file after linking
         std::string delete_command = "rm output.o";
         //std::system(delete_command.c_str());

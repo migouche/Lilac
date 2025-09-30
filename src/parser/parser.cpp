@@ -239,25 +239,33 @@ ast_tuple<ASTDefinition> internal_parse_definition(const std::unique_ptr<Tokeniz
     return {true, std::make_shared<ASTDefinition>(name.get_value(), value, is_global)};
 }
 
-ast_tuple<ASTBlock> parse_block(const std::unique_ptr<Tokenizer>& tokenizer, ScopeStack& scope_stack)
-{
-    if (tokenizer->peek_token().get_token_kind() != OPEN_CURLEY_BRACE)
-        return {false, nullptr};
-    tokenizer->get_token(); // consume the '{'
+std::shared_ptr<ASTBlock> parse_block_internal(const std::unique_ptr<Tokenizer>& tokenizer, ScopeStack& scope_stack){
     scope_stack.emplace_back();
     std::vector<std::shared_ptr<ASTDefinition>> definitions;
     while (true)
     {
         if (const auto [is_def, def] = internal_parse_definition(tokenizer, scope_stack); is_def)
+        {
+            std::cout << "Parsed definition in block: " << std::endl;
             definitions.push_back(def);
+        }
         else
             break;
     }
 
     const auto tail_expression = parse_value(tokenizer, scope_stack);
     scope_stack.pop_back();
+    return std::make_unique<ASTBlock>(definitions, tail_expression);
+}
+
+ast_tuple<ASTBlock> parse_block(const std::unique_ptr<Tokenizer>& tokenizer, ScopeStack& scope_stack)
+{
+    if (tokenizer->peek_token().get_token_kind() != OPEN_CURLEY_BRACE)
+        return {false, nullptr};
+    tokenizer->get_token(); // consume the '{'
+    const auto block = parse_block_internal(tokenizer, scope_stack);
     expect(tokenizer->get_token().get_token_kind() == CLOSE_CURLEY_BRACE, "expected '}' to close block (Dont use ; on tail expression!)");
-    return {true, std::make_shared<ASTBlock>(definitions, tail_expression)};
+    return {true, block};
 }
 
 std::shared_ptr<ASTValue> parse_value(const std::unique_ptr<Tokenizer>& tokenizer,  ScopeStack& token_stack)
@@ -337,12 +345,24 @@ FunctionBody parse_function_body(const std::unique_ptr<Tokenizer>& tokenizer, co
 {
     expect(tokenizer->get_token().get_token_kind() == OPEN_CURLEY_BRACE, "function must have a body, got");
 
-    const auto peek = tokenizer->peek_token();
-    if (header.domain.size() == 1 && header.domain.front().get_value() == "void" &&
+    if (const auto peek = tokenizer->peek_token(); header.domain.size() == 1 && header.domain.front().get_value() ==
+        "void" &&
         peek.get_token_kind() != DOT && !(peek.get_token_kind() == IDENTIFIER && peek.get_value() == header.name))
     {
         // just parse the value and construct an imaginary case
-        auto value = parse_value(tokenizer, token_stack);
+        // TODO: HERE GOES SYNTACTIC SUGAR TO NOT HAVE TWO CURLEY BRACES WHEN PARSING A BLOCK AFTER A VOID FUNC
+
+        if (peek.get_token_kind() == KEYWORD && peek.get_value() == "let")
+        {
+            // parse block instead
+            const auto r = std::list{FunctionCase{{}, parse_block_internal(tokenizer, token_stack)}};
+            expect(tokenizer->get_token().get_token_kind() == CLOSE_CURLEY_BRACE,
+                   "expected '}' to close function body, got " + get_string_from_token(tokenizer->get_token().get_token_kind()) +
+                   tokenizer->get_token().get_value());
+            return {r};
+        }
+
+        const auto value = parse_value(tokenizer, token_stack);
         expect(tokenizer->get_token().get_token_kind() == SEMICOLON,
                "expected semicolon after function body, got " + get_string_from_token(tokenizer->get_token().get_token_kind()) +
                tokenizer->get_token().get_value());
