@@ -5,7 +5,7 @@
 #include <iostream>
 #include "AST/ASTValues/tuple.h"
 
-Tuple::Tuple(std::list<std::shared_ptr<ASTValue>> elements): elements(std::move(elements)) {}
+Tuple::Tuple(std::vector<std::unique_ptr<ASTValue>> elements): elements(std::move(elements)) {}
 
 void Tuple::print() const {
     std::cout << " [ ";
@@ -17,6 +17,6 @@ void Tuple::print() const {
     std::cout << " ] ";
 }
 
-llvm::Value *Tuple::codegen(const std::unique_ptr<ParserData>&) {
+llvm::Value *Tuple::codegen(ParserData&) {
     return nullptr;
 }

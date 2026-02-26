@@ -1,8 +1,6 @@
-//
-// Created by migouche on 9/10/2023.
-//
-
 #include <iostream>
+#include <algorithm>
+#include <ranges>
 #include "parser/parser.h"
 
 #include "AST/ASTValues/astblock.h"
@@ -10,425 +8,344 @@
 #include "AST/ASTValues/literal.h"
 #include "AST/ASTValues/tuple.h"
 #include "AST/ASTValues/variable.h"
+#include "AST/ASTValues/functioncall.h"
+#include "lexer/tokenkind.h"
 
-typedef std::vector<std::vector<std::string>> ScopeStack;
-
-void __l_fail(const std::string& message, const std::string& file, const int line)
-{
-    std::string out = "expect failed at ";
-    out.append(file);
-    out.append(":");
-    out.append(std::to_string(line));
-    out.append("\n\t");
-    out.append(message);
-    throw std::runtime_error(out);
-}
-
-#define expect(condition, message) static_cast<bool>(condition) ? void(0) : __l_fail(message,__FILE__, __LINE__)
-
-
-
-Parser::Parser(const std::string &path): tokenizer(std::make_unique<Tokenizer>(path)), token_stack(ScopeStack()) {}
-
-struct FunctionHeader
-{
-    std::string name;
-    std::list<Token> domain;
-    std::list<Token> codomain;
-};
-
-bool stack_has(ScopeStack& stack, const std::string& token)
-{
-    return std::ranges::any_of(stack, [&](const auto& scope) {
-        return std::ranges::find(scope, token) != scope.end();
-    });
-}
-
-
-FunctionHeader get_function_header(const std::unique_ptr<Tokenizer>& tokenizer, bool* pure)
-{
-
-    expect(tokenizer->peek_token().get_info() == std::make_pair(KEYWORD, std::string ("func")) ||
-            tokenizer->peek_token().get_info() == std::make_pair(KEYWORD, std::string("impure")),
-           "function parsing must start by 'func' or by 'impure func'"); // cant put template here
-
-    *pure = true;
-    if(tokenizer->get_token().get_value() == "impure")
-    {
-        tokenizer->get_token(); // consume 'func'
-        *pure = false;
-    }
-
-    bool domain_parens = false;
-    bool codomain_parens = false;
-
-
-    expect(tokenizer->peek_token().get_token_kind() == IDENTIFIER, "function name must be an identifier");
-    const std::string name = tokenizer->get_token().get_value();
-
-    if(tokenizer->peek_token().get_token_kind() == CLOSE_PARENS)
-    {
-        domain_parens = true;
-        tokenizer->get_token();
-    }
-
-    expect(tokenizer->peek_token().get_token_kind() == IDENTIFIER, "function must have at least one input");
-
-    std::list<Token> domain = {};
-
-    while(tokenizer->peek_token().get_token_kind() == IDENTIFIER)
-    {
-        domain.push_back(tokenizer->get_token());
-
-        if(tokenizer->peek_token().get_token_kind() == get_multi_byte_token_kind("->"))
-            break;
-        if(domain_parens && tokenizer->peek_token().get_token_kind() == CLOSE_PARENS)
-        {
-            tokenizer->get_token();
-            break;
+// Helper to check scope
+bool stack_has(const std::vector<std::vector<std::string>>& stack, const std::string& token) {
+    for (const auto& scope : stack | std::views::reverse) {
+        if (std::ranges::find(scope, token) != scope.end()) {
+            return true;
         }
-        expect(tokenizer->get_token().get_token_kind() == COMMA, "Function domain must be comma-separated");
+    }
+    return false;
+}
+
+Parser::Parser(const std::string &path): tokenizer(std::make_unique<Tokenizer>(path)) {
+    token_stack.emplace_back(); // Global scope
+}
+
+// Helper macros for expected propagation
+#define TRY(x) ({ auto val = (x); if (!val) return std::unexpected(val.error()); std::move(*val); })
+#define EXPECT(cond, msg) if (!(cond)) return std::unexpected(std::string(msg));
+
+std::expected<std::unique_ptr<ASTValue>, std::string> Parser::parse_value() {
+    auto token = tokenizer->peek_token();
+
+    if (token.get_token_kind() == OPEN_SQUARE_BRACE) {
+        auto res = parse_tuple();
+        if (res) return std::move(*res);
+        return std::unexpected(res.error());
+    }
+    
+    if (token.get_info() == std::make_pair(KEYWORD, std::string("if"))) {
+        auto res = parse_if();
+        if (res) return std::move(*res);
+        return std::unexpected(res.error());
     }
 
-    if(domain_parens) // NOTE: still needed (ik there is a lot of redundant code, will fix later)
-        expect(tokenizer->get_token().get_token_kind() == CLOSE_PARENS, "no matching parenthesis");
-
-    expect(tokenizer->get_token().get_token_kind() == get_multi_byte_token_kind("->"),
-           "expected '->' to introduce return type");
-
-    if(tokenizer->peek_token().get_token_kind() == static_cast<TokenKind>('('))
-    {
-        codomain_parens = true;
-        tokenizer->get_token();
+    if (token.get_token_kind() == OPEN_CURLEY_BRACE) {
+        auto res = parse_block();
+        if (res) return std::move(*res);
+        return std::unexpected(res.error());
     }
 
-    expect(tokenizer->peek_token().get_token_kind() == IDENTIFIER, "function must have at least one output");
-
-    std::list<Token> codomain = {};
-
-    while(tokenizer->peek_token().get_token_kind() == IDENTIFIER)
-    {
-        codomain.push_back(tokenizer->get_token());
-        if(tokenizer->peek_token().get_token_kind() == OPEN_CURLEY_BRACE)
-            break;
-        if(codomain_parens && tokenizer->peek_token().get_token_kind() == CLOSE_PARENS)
-        {
-            tokenizer->get_token();
-            break;
+    // Function Call or Identifier or Literal
+    if (token.get_token_kind() == IDENTIFIER || token.is_primitive_operation()) {
+        if (tokenizer->peek_token(1).get_token_kind() == OPEN_PARENS) {
+            auto res = parse_call();
+            if (res) return std::move(*res);
+            return std::unexpected(res.error());
         }
-        expect(tokenizer->get_token().get_token_kind() == COMMA, "Function codomain must be comma-separated");
+        
+        // Variable
+        if (token.get_token_kind() == IDENTIFIER) {
+            tokenizer->get_token(); // consume
+            if (!stack_has(token_stack, token.get_value())) {
+                return std::unexpected("Identifier '" + token.get_value() + "' not found in scope");
+            }
+            return std::make_unique<Variable>(token);
+        }
     }
 
-
-    if(codomain_parens)
-        expect(tokenizer->get_token().get_token_kind() == CLOSE_PARENS, "no matching parenthesis");
-
-    return {name, domain, codomain};
-}
-
-
-struct FunctionBody
-{
-    std::list<FunctionCase> cases;
-};
-
-template<typename T>
-using ast_tuple = std::pair<bool, std::shared_ptr<T>>;
-
-std::shared_ptr<ASTValue> parse_value(const std::unique_ptr<Tokenizer>& tokenizer, ScopeStack& token_stack);
-
-ast_tuple<Tuple> parse_tuple(const std::unique_ptr<Tokenizer>& tokenizer, ScopeStack& token_stack)
-{
-    if(tokenizer->peek_token().get_token_kind() != OPEN_SQUARE_BRACE)
-        return {false, nullptr};
-    tokenizer->get_token(); // consume the '['
-    std::list<std::shared_ptr<ASTValue>> elements;
-    while(tokenizer->peek_token().get_token_kind() != CLOSE_SQUARE_BRACE)
-    {
-        elements.push_back(parse_value(tokenizer, token_stack));
-        if(tokenizer->peek_token().get_token_kind() == COMMA)
-            tokenizer->get_token(); // consume the comma;
-        else
-            expect(tokenizer->peek_token().get_token_kind() == CLOSE_SQUARE_BRACE, "no matching ']'");
-
+    if (token.get_token_kind() == LITERAL || 
+        (token.get_token_kind() == KEYWORD && (token.get_value() == "true" || token.get_value() == "false"))) {
+        tokenizer->get_token(); // consume
+        return std::make_unique<Literal>(token);
     }
-    expect(tokenizer->get_token().get_token_kind() == CLOSE_SQUARE_BRACE, "expected ']'");
-    return {true, std::make_shared<Tuple>(elements)};
+
+    return std::unexpected("Unexpected token in value parsing: " + token.get_value());
 }
 
-ast_tuple<ASTIf> parse_if(const std::unique_ptr<Tokenizer>& tokenizer, ScopeStack& token_stack) {
-    if(tokenizer->peek_token().get_info() != std::make_pair(KEYWORD, "if"))
-        return {false, nullptr};
+std::expected<std::unique_ptr<Tuple>, std::string> Parser::parse_tuple() {
+    tokenizer->get_token(); // consume '['
+    std::vector<std::unique_ptr<ASTValue>> elements;
+    
+    while (tokenizer->peek_token().get_token_kind() != CLOSE_SQUARE_BRACE) {
+        auto val = parse_value();
+        if (!val) return std::unexpected(val.error());
+        elements.push_back(std::move(*val));
+
+        if (tokenizer->peek_token().get_token_kind() == COMMA) {
+            tokenizer->get_token();
+        } else if (tokenizer->peek_token().get_token_kind() != CLOSE_SQUARE_BRACE) {
+            return std::unexpected("Expected comma or ']' in tuple");
+        }
+    }
+    tokenizer->get_token(); // consume ']'
+    return std::make_unique<Tuple>(std::move(elements));
+}
+
+std::expected<std::unique_ptr<ASTIf>, std::string> Parser::parse_if() {
     tokenizer->get_token(); // consume 'if'
-    expect(tokenizer->get_token().get_token_kind() == OPEN_PARENS, "expected '(' after 'if'");
-    std::shared_ptr<ASTValue> condition = parse_value(tokenizer, token_stack);
-    expect(tokenizer->get_token().get_token_kind() == CLOSE_PARENS, "expected ')' after condition");
-    std::shared_ptr<ASTValue> then_branch = parse_value(tokenizer, token_stack);
-    const auto else_token = tokenizer->get_token();
-    expect(else_token.get_token_kind() == KEYWORD && else_token.get_value() == "else", "expected 'else' after 'then' branch");
-    std::shared_ptr<ASTValue> else_branch = parse_value(tokenizer, token_stack);
+    EXPECT(tokenizer->get_token().get_token_kind() == OPEN_PARENS, "Expected '(' after if");
 
-    return {true, std::make_shared<ASTIf>(condition, then_branch, else_branch)};
+    auto condition = parse_value();
+    if (!condition) return std::unexpected(condition.error());
+
+    EXPECT(tokenizer->get_token().get_token_kind() == CLOSE_PARENS, "Expected ')' after condition");
+
+    auto then_branch = parse_value();
+    if (!then_branch) return std::unexpected(then_branch.error());
+
+    auto else_token = tokenizer->get_token();
+    EXPECT(else_token.get_token_kind() == KEYWORD && else_token.get_value() == "else", "Expected 'else'");
+
+    auto else_branch = parse_value();
+    if (!else_branch) return std::unexpected(else_branch.error());
+
+    return std::make_unique<ASTIf>(std::move(*condition), std::move(*then_branch), std::move(*else_branch));
 }
 
+std::expected<std::unique_ptr<FunctionCall>, std::string> Parser::parse_call() {
+    auto name_token = tokenizer->get_token(); // consume name
+    tokenizer->get_token(); // consume '('
+    
+    std::string name = name_token.get_token_kind() == IDENTIFIER ? name_token.get_value() : get_string_from_token(name_token.get_token_kind());
+    std::vector<std::unique_ptr<ASTValue>> args;
 
-ast_tuple<FunctionCall> parse_function_call(const std::unique_ptr<Tokenizer>& tokenizer,
-ScopeStack& token_stack)
-{
-    if(!((tokenizer->peek_token().get_token_kind() == IDENTIFIER || tokenizer->peek_token().is_primitive_operation())
-    && tokenizer->peek_token(1).get_token_kind() == OPEN_PARENS))
-        return {false, nullptr};
+    while (tokenizer->peek_token().get_token_kind() != CLOSE_PARENS) {
+        auto val = parse_value();
+        if (!val) return std::unexpected(val.error());
+        args.push_back(std::move(*val));
 
-    const auto t = tokenizer->get_token();
-    expect(t.get_token_kind() == IDENTIFIER || t.is_primitive_operation(), "expected function name as identifier");
-    expect(tokenizer->get_token().get_token_kind() == OPEN_PARENS, "expected function parens");
-    auto name = t.get_token_kind() == IDENTIFIER ? t.get_value(): get_string_from_token(t.get_token_kind());
-    std::list<std::shared_ptr<ASTValue>> arguments = {};
-    while(tokenizer->peek_token().get_token_kind() != CLOSE_PARENS)
-    {
-        arguments.push_back(parse_value(tokenizer, token_stack));
-        if (tokenizer->peek_token().get_token_kind() == COMMA)
+        if (tokenizer->peek_token().get_token_kind() == COMMA) {
             tokenizer->get_token();
-        else
-            expect(tokenizer->peek_token().get_token_kind() == CLOSE_PARENS,
-                   "expected comma or ')' to end function call");
+        } else if (tokenizer->peek_token().get_token_kind() != CLOSE_PARENS) {
+            return std::unexpected("Expected comma or ')' in function call");
+        }
     }
-    expect(tokenizer->get_token().get_token_kind() == CLOSE_PARENS, "expected ')'");
-    return {true, std::make_shared<FunctionCall>(name, arguments)};
+    tokenizer->get_token(); // consume ')'
+    
+    return std::make_unique<FunctionCall>(name, std::move(args));
 }
 
-ast_tuple<ASTValue> parse_expression(const std::unique_ptr<Tokenizer>& tokenizer, ScopeStack& token_stack)
-{
-    if (const auto peek_t = tokenizer->peek_token(); peek_t.get_token_kind() != IDENTIFIER && peek_t.get_token_kind() !=
-        LITERAL && peek_t.get_token_kind() != UNDERSCORE && !(tokenizer->peek_token().get_token_kind() == KEYWORD &&
-            (peek_t.get_value() == "true" || peek_t.get_value() == "false")))
-        return {false, nullptr};
-    auto t = tokenizer->get_token();
-    if(t.get_token_kind() == IDENTIFIER) {
-        if (!stack_has(token_stack, t.get_value()))
-            throw std::runtime_error("Identifier '" + t.get_value() + "' not found in scope");
-        return {true, std::make_shared<Variable>(t)};
-    }
-    if(t.get_token_kind() == LITERAL || t.get_token_kind() == KEYWORD) // no extra checks because they're done before
-        return {true, std::make_shared<Literal>(t)};
-    if(t.get_token_kind() == UNDERSCORE)
-        throw std::runtime_error("underscore not implemented yet");
-    throw std::runtime_error("Couldn't parse expression");
-}
-
-ast_tuple<ASTDefinition> internal_parse_definition(const std::unique_ptr<Tokenizer>& tokenizer, ScopeStack& scope_stack)
-{
-    if (tokenizer->peek_token().get_token_kind() != KEYWORD || tokenizer->peek_token().get_value() != "let")
-        return {false, nullptr};
-
+std::expected<std::unique_ptr<ASTDefinition>, std::string> Parser::parse_definition() {
     tokenizer->get_token(); // consume 'let'
+    auto name_token = tokenizer->get_token();
+    EXPECT(name_token.get_token_kind() == IDENTIFIER, "Expected identifier for definition name");
+    
+    EXPECT(tokenizer->get_token().get_token_kind() == EQUAL, "Expected '=' in definition");
 
-    const auto name = tokenizer->get_token();
-    expect(name.get_token_kind() == IDENTIFIER, "definition name must be an identifier");
+    auto value = parse_value();
+    if (!value) return std::unexpected(value.error());
 
-    expect(tokenizer->get_token().get_token_kind() == EQUAL, "definition must be assigned to something");
+    EXPECT(tokenizer->get_token().get_token_kind() == SEMICOLON, "Expected ';' after definition");
 
-    const auto value = parse_value(tokenizer, scope_stack);
-    expect(tokenizer->get_token().get_token_kind() == SEMICOLON, "expected semicolon after definition");
+    token_stack.back().push_back(name_token.get_value());
+    bool is_global = token_stack.size() <= 1;
 
-    scope_stack.back().push_back(name.get_value());
-
-    // check if its global (if the stack has size > 1, then it is a local definition)
-    auto is_global = scope_stack.size() <= 1;
-
-    return {true, std::make_shared<ASTDefinition>(name.get_value(), value, is_global)};
+    return std::make_unique<ASTDefinition>(name_token.get_value(), std::move(*value), is_global);
 }
 
-std::shared_ptr<ASTBlock> parse_block_internal(const std::unique_ptr<Tokenizer>& tokenizer, ScopeStack& scope_stack){
-    scope_stack.emplace_back();
-    std::vector<std::shared_ptr<ASTDefinition>> definitions;
-    while (true)
-    {
-        if (const auto [is_def, def] = internal_parse_definition(tokenizer, scope_stack); is_def)
-        {
-            std::cout << "Parsed definition in block: " << std::endl;
-            definitions.push_back(def);
-        }
-        else
-            break;
-    }
-
-    const auto tail_expression = parse_value(tokenizer, scope_stack);
-    scope_stack.pop_back();
-    return std::make_unique<ASTBlock>(definitions, tail_expression);
-}
-
-ast_tuple<ASTBlock> parse_block(const std::unique_ptr<Tokenizer>& tokenizer, ScopeStack& scope_stack)
-{
-    if (tokenizer->peek_token().get_token_kind() != OPEN_CURLEY_BRACE)
-        return {false, nullptr};
-    tokenizer->get_token(); // consume the '{'
-    const auto block = parse_block_internal(tokenizer, scope_stack);
-    expect(tokenizer->get_token().get_token_kind() == CLOSE_CURLEY_BRACE, "expected '}' to close block (Dont use ; on tail expression!)");
-    return {true, block};
-}
-
-std::shared_ptr<ASTValue> parse_value(const std::unique_ptr<Tokenizer>& tokenizer,  ScopeStack& token_stack)
-{
-    if(const auto [is_tuple, tuple] = parse_tuple(tokenizer, token_stack); is_tuple)
-        return tuple;
-    if(const auto [is_function_call, function_call] = parse_function_call(tokenizer, token_stack); is_function_call)
-        return function_call;
-    if(const auto [is_expression, expression] = parse_expression(tokenizer, token_stack); is_expression)
-        return expression;
-    if(const auto [is_if, ast_if] = parse_if(tokenizer, token_stack); is_if)
-        return ast_if;
-    if (const auto [is_block, block] = parse_block(tokenizer, token_stack); is_block)
-        return block;
-
-    const auto fail_token = tokenizer->peek_token();
-    std::cerr << "Failed to parse value at " << fail_token.get_line() << ":" << fail_token.get_pos()
-              << " with token '" << fail_token.get_value() << "' of kind " << get_string_from_token(fail_token.get_token_kind()) << std::endl;
-    throw std::runtime_error("Couldn't parse value");
-}
-
-
-FunctionCase parse_function_case(const std::unique_ptr<Tokenizer>& tokenizer, const FunctionHeader& header, ScopeStack& token_stack)
-{
+std::expected<std::unique_ptr<ASTBlock>, std::string> Parser::parse_block() {
+    tokenizer->get_token(); // consume '{'
     token_stack.emplace_back();
-    //expect((tokenizer->peek_token().get_token_kind() == IDENTIFIER || tokenizer->get_token().get_token_kind() == DOT) &&
-    //       tokenizer->get_token().get_token_kind() == OPEN_PARENS,
-    //       "function case must start with a function 'definition'");
 
-    const auto peek = tokenizer->peek_token();
+    std::vector<std::unique_ptr<ASTDefinition>> definitions;
 
-    expect(peek.get_token_kind() == IDENTIFIER || peek.get_token_kind() == DOT, "expected function name or dot before '('");
-    (void)tokenizer->get_token();
-    expect(tokenizer->get_token().get_token_kind() == OPEN_PARENS, "function case must start with '('");
-
-    expect(tokenizer->peek_token().get_token_kind() == IDENTIFIER || // with lazy evaluation, second condition being checked means first is false
-              tokenizer->peek_token().get_token_kind() == UNDERSCORE ||
-                tokenizer->peek_token().get_token_kind() == LITERAL ||
-    (header.domain.size() == 1 && header.domain.front().get_value() == "void" && tokenizer->get_token().get_token_kind() == CLOSE_PARENS),
-           "function case must have at least one input or be of type void -> output");
-
-    std::list<Token> inputs = {};
-
-    while(tokenizer->peek_token().get_token_kind() == IDENTIFIER ||
-            tokenizer->peek_token().get_token_kind() == UNDERSCORE ||
-            tokenizer->peek_token().get_token_kind() == LITERAL)
-    {
-        expect(tokenizer->peek_token().get_token_kind() == IDENTIFIER ||
-               tokenizer->peek_token().get_token_kind() == UNDERSCORE ||
-               tokenizer->peek_token().get_token_kind() == LITERAL
-               , "argument must be an identifier, underscore or literal");
-        inputs.push_back(tokenizer->get_token());
-        if(tokenizer->peek_token().get_token_kind() == CLOSE_PARENS)
-        {
-            tokenizer->get_token();
-            break;
-        }
-        expect(tokenizer->get_token().get_token_kind() == COMMA, "Function domain must be comma-separated");
+    // Parse definitions
+    while (tokenizer->peek_token().get_info() == std::make_pair(KEYWORD, std::string("let"))) {
+        auto def = parse_definition();
+        if (!def) return std::unexpected(def.error());
+        definitions.push_back(std::move(*def));
     }
 
-    expect(tokenizer->get_token().get_token_kind() == EQUAL, "function case must be assigned to something");
+    // Parse tail expression
+    auto tail = parse_value();
+    if (!tail) return std::unexpected(tail.error());
 
-    //std::list<Token> operation = {};
-
-    for (const auto& input : inputs)
-        token_stack.back().push_back(input.get_value());
-
-    const auto _return = parse_value(tokenizer, token_stack);
-
-    const auto tok = tokenizer->get_token();
-    expect(tok.get_token_kind() == SEMICOLON, "expected semicolon, got " + get_string_from_token(tok.get_token_kind()) + tok.get_value());
     token_stack.pop_back();
-    return {inputs, _return};
+    EXPECT(tokenizer->get_token().get_token_kind() == CLOSE_CURLEY_BRACE, "Expected '}'");
+
+    return std::make_unique<ASTBlock>(std::move(definitions), std::move(*tail));
 }
 
-FunctionBody parse_function_body(const std::unique_ptr<Tokenizer>& tokenizer, const FunctionHeader& header, ScopeStack& token_stack)
-{
-    expect(tokenizer->get_token().get_token_kind() == OPEN_CURLEY_BRACE, "function must have a body, got");
+std::expected<std::unique_ptr<FunctionDeclaration>, std::string> Parser::parse_function() {
+    bool pure = true;
+    auto start = tokenizer->peek_token();
+    if (start.get_value() == "impure") {
+        pure = false;
+        tokenizer->get_token();
+    }
+    tokenizer->get_token(); // consume 'func'
 
-    if (const auto peek = tokenizer->peek_token(); header.domain.size() == 1 && header.domain.front().get_value() ==
-        "void" &&
-        peek.get_token_kind() != DOT && !(peek.get_token_kind() == IDENTIFIER && peek.get_value() == header.name))
-    {
-        // just parse the value and construct an imaginary case
-        // TODO: HERE GOES SYNTACTIC SUGAR TO NOT HAVE TWO CURLEY BRACES WHEN PARSING A BLOCK AFTER A VOID FUNC
+    auto name_token = tokenizer->get_token();
+    EXPECT(name_token.get_token_kind() == IDENTIFIER, "Expected function name");
 
-        if (peek.get_token_kind() == KEYWORD && peek.get_value() == "let")
-        {
-            // parse block instead
-            const auto r = std::list{FunctionCase{{}, parse_block_internal(tokenizer, token_stack)}};
-            expect(tokenizer->get_token().get_token_kind() == CLOSE_CURLEY_BRACE,
-                   "expected '}' to close function body, got " + get_string_from_token(tokenizer->get_token().get_token_kind()) +
-                   tokenizer->get_token().get_value());
-            return {r};
+    // simplified parsing for now, assuming standard structure
+    // Domain
+    if (tokenizer->peek_token().get_token_kind() == OPEN_PARENS) tokenizer->get_token();
+    
+    std::vector<Token> domain;
+    while (tokenizer->peek_token().get_token_kind() == IDENTIFIER) {
+        domain.push_back(tokenizer->get_token());
+        if (tokenizer->peek_token().get_token_kind() == COMMA) tokenizer->get_token();
+        else break;
+    }
+    if (tokenizer->peek_token().get_token_kind() == CLOSE_PARENS) tokenizer->get_token();
+
+    EXPECT(tokenizer->get_token().get_token_kind() == get_multi_byte_token_kind("->"), "Expected '->'");
+
+    // Codomain
+    if (tokenizer->peek_token().get_token_kind() == OPEN_PARENS) tokenizer->get_token(); // optional parens
+    std::vector<Token> codomain;
+    while (tokenizer->peek_token().get_token_kind() == IDENTIFIER) {
+        codomain.push_back(tokenizer->get_token());
+        if (tokenizer->peek_token().get_token_kind() == COMMA) tokenizer->get_token();
+        else break;
+    }
+    if (tokenizer->peek_token().get_token_kind() == CLOSE_PARENS) tokenizer->get_token(); // optional parens
+
+    // Body
+    EXPECT(tokenizer->get_token().get_token_kind() == OPEN_CURLEY_BRACE, "Expected '{' for function body");
+    
+    // Register function name in current scope (global usually)
+    token_stack.back().push_back(name_token.get_value());
+    token_stack.emplace_back(); // Function scope
+
+    // Cases
+    std::vector<FunctionCase> cases;
+    while (tokenizer->peek_token().get_token_kind() != CLOSE_CURLEY_BRACE) {
+        // Check for explicit case syntax: func_name( ...
+        // We only consider it a case definition if the identifier matches the function name.
+        bool is_explicit_case = false;
+        if (tokenizer->peek_token().get_token_kind() == IDENTIFIER) {
+             if (tokenizer->peek_token().get_value() == name_token.get_value()) { // Must match function name
+                 if (tokenizer->peek_token(1).get_token_kind() == OPEN_PARENS) {
+                     is_explicit_case = true;
+                 }
+             }
         }
 
-        const auto value = parse_value(tokenizer, token_stack);
-        expect(tokenizer->get_token().get_token_kind() == SEMICOLON,
-               "expected semicolon after function body, got " + get_string_from_token(tokenizer->get_token().get_token_kind()) +
-               tokenizer->get_token().get_value());
-        expect(tokenizer->get_token().get_token_kind() == CLOSE_CURLEY_BRACE,
-           "expected '}' to close function body, got " + get_string_from_token(tokenizer->get_token().get_token_kind()) +
-           tokenizer->get_token().get_value());
+        if (is_explicit_case) {
+            auto case_name_token = tokenizer->get_token(); // consume name
+            tokenizer->get_token(); // consume '('
+            
+            std::vector<Token> inputs;
+            while (tokenizer->peek_token().get_token_kind() != CLOSE_PARENS) {
+                inputs.push_back(tokenizer->get_token());
+                if (tokenizer->peek_token().get_token_kind() == COMMA) tokenizer->get_token();
+            }
+            tokenizer->get_token(); // consume ')'
+            
+            // Add inputs to scope
+            token_stack.emplace_back(); 
+            for(const auto& t : inputs) {
+                token_stack.back().push_back(t.get_value());
+            }
 
-        if (!value)
-        {
-            std::cerr << "error: function body must have a body, got" << std::endl;
+            EXPECT(tokenizer->get_token().get_token_kind() == EQUAL, "Expected '=' in function case");
+            
+            auto val = parse_value();
+            if (!val) return std::unexpected(val.error());
+
+            EXPECT(tokenizer->get_token().get_token_kind() == SEMICOLON, "Expected ';' at end of case");
+            
+            cases.push_back({inputs, std::move(*val)});
+            token_stack.pop_back(); 
+        } else {
+            // Implicit case (body directly)
+            
+            // Check if we have definitions (let ...) which implies a block-like structure directly in function body
+            // But usually function body is a single expression.
+            // If the user writes `func ... { let x = 1; x }`, that's valid if we parse it as a sequence of definitions ending in expression.
+            // This mirrors parse_block logic.
+            // But parse_block expects '{'.
+            // Here we are already inside '{' of the function.
+            // So we should reuse block parsing logic but without consuming '{' and '}'?
+            // Or maybe treating it as a block AST node?
+            
+            // Wait, if we allow `let` here, we are essentially parsing a block content.
+            // And since we are in `while !CLOSE_BRACE`, we might be parsing multiple statements?
+            // But `cases.push_back` expects one expression per case.
+            // If the body has multiple statements, it should be wrapped in Block.
+            
+            // If we see `let`, we can parse definitions until we hit an expression?
+            // And then wrap it in a ASTBlock?
+            // But ASTBlock usually corresponds to `{ ... }`.
+            
+            if (tokenizer->peek_token().get_info() == std::make_pair(KEYWORD, std::string("let"))) {
+                 // Inline block logic
+                 std::vector<std::unique_ptr<ASTDefinition>> definitions;
+                 while (tokenizer->peek_token().get_info() == std::make_pair(KEYWORD, std::string("let"))) {
+                     auto def = parse_definition();
+                     if (!def) return std::unexpected(def.error());
+                     definitions.push_back(std::move(*def));
+                 }
+                 auto tail = parse_value();
+                 if (!tail) return std::unexpected(tail.error());
+                 
+                 // If there was a list of definitions, we should probably expect the function body to end here?
+                 // Or rather, this whole sequence IS the case body.
+                 
+                 // Check for optional semicolon after tail check
+                 auto semi = tokenizer->peek_token();
+                 if (semi.get_token_kind() == SEMICOLON) {
+                      tokenizer->get_token(); 
+                 }
+                 
+                 // Wrap in block
+                 auto block = std::make_unique<ASTBlock>(std::move(definitions), std::move(*tail));
+                 cases.push_back({{}, std::move(block)});
+                 
+            } else {
+                 // Standard expression
+                 auto val = parse_value();
+                 if (!val) return std::unexpected(val.error());
+
+                 auto semi = tokenizer->peek_token();
+                 if (semi.get_token_kind() == SEMICOLON) {
+                      tokenizer->get_token(); 
+                 } else {
+                      return std::unexpected("Expected ';' after function body expression, got: " + semi.get_value());
+                 }
+                 cases.push_back({{}, std::move(*val)});
+            }
         }
-
-        return FunctionBody{std::list{FunctionCase{{}, value}}};
     }
+    tokenizer->get_token(); // consume '}'
+    token_stack.pop_back();
 
-    std::list<FunctionCase> cases = {};
-    while(tokenizer->peek_token().get_token_kind() != CLOSE_CURLEY_BRACE)
-    {
-        cases.push_back(parse_function_case(tokenizer, header, token_stack));
-    }
-    expect(tokenizer->get_token().get_token_kind() == CLOSE_CURLEY_BRACE,
-           "expected '}', although this should never happen :/");
-    return {cases};
+    return std::make_unique<FunctionDeclaration>(name_token.get_value(), domain, codomain, std::move(cases), pure);
 }
 
-std::shared_ptr<FunctionDeclaration> get_function_from_parts(const FunctionHeader& h, const FunctionBody& b, bool pure)
-{
-    return std::make_shared<FunctionDeclaration>(h.name, h.domain, h.codomain, b.cases, pure);
-}
-
-std::shared_ptr<FunctionDeclaration> Parser::parse_function() {
-    bool pure;
-    const auto header = get_function_header(tokenizer, &pure);
-    token_stack.back().push_back(header.name);
-    const auto body = parse_function_body(tokenizer, header, token_stack);
-    return get_function_from_parts(header, body, pure);
-}
-
-std::shared_ptr<ASTDefinition> Parser::parse_definition() {
-    const auto [is_def, def] = internal_parse_definition(tokenizer, token_stack);
-    if (!is_def)
-        throw std::runtime_error("Expected definition, got " + get_string_from_token(tokenizer->peek_token().get_token_kind()));
-    return def;
-}
-
-ASTTree Parser::get_tree()  { // NOTE: must be a copy because compiler lifetime is much greater than parser
-    auto tree = ASTTree();
-    token_stack.emplace_back();
-    while(!tokenizer->end_of_tokens())
-    {
-        if (const auto peek = tokenizer->peek_token();
-            peek.get_info() == std::make_pair(KEYWORD, std::string("func")) ||
-            peek.get_info() == std::make_pair(KEYWORD, std::string("impure")))
-            tree.add_child(this->parse_function());
-        else if (peek.get_info() == std::make_pair(KEYWORD, std::string("let")))
-            tree.add_child(this->parse_definition());
-
+ASTTree Parser::get_tree() {
+    ASTTree tree;
+    while (!tokenizer->end_of_tokens()) {
+        auto peek = tokenizer->peek_token();
+        if (peek.get_value() == "func" || peek.get_value() == "impure") {
+            auto func = parse_function();
+            if (func) tree.add_child(std::move(*func));
+            else std::cerr << "Error parsing function: " << func.error() << std::endl;
+        } else if (peek.get_value() == "let") {
+            auto def = parse_definition();
+            if (def) tree.add_child(std::move(*def));
+            else std::cerr << "Error parsing definition: " << def.error() << std::endl;
+        } else {
+            // consume unknown to avoid infinite loop
+            tokenizer->get_token();
+        }
     }
-
-    std::cout << "Known funcs: ";
-    for (const auto& f: token_stack.back())  // last scope is the global scope, where all functions are defined
-    {
-        std::cout << f << " ";
-    }
-    std::cout << std::endl;
-
     return tree;
 }
-

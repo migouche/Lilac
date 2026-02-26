@@ -13,10 +13,10 @@ Literal::Literal(const Token& token): value(token.get_value()) {}
 
 void Literal::print() const {std::cout << value; }
 
-llvm::Value *Literal::codegen(const std::unique_ptr<ParserData>& parser_data) {
+llvm::Value *Literal::codegen(ParserData& parser_data) {
     //TODO: WE WILL ONLY USE INTS FOR NOW
-    if (this->value == "true") return llvm::ConstantInt::getTrue(*parser_data->context);
-    if (this->value == "false") return llvm::ConstantInt::getFalse(*parser_data->context);
+    if (this->value == "true") return llvm::ConstantInt::getTrue(*parser_data.context);
+    if (this->value == "false") return llvm::ConstantInt::getFalse(*parser_data.context);
     const int n = std::stoi(value);
-    return llvm::ConstantInt::get(*parser_data->context, llvm::APInt(32, n));
+    return llvm::ConstantInt::get(*parser_data.context, llvm::APInt(32, n));
 }

@@ -8,11 +8,12 @@
 #include <utility>
 #include <iostream>
 #include <llvm/IR/Module.h>
+#include <llvm/IR/Verifier.h>
 
 
 FunctionDeclaration::FunctionDeclaration(std::string name,
-                                         std::list<Token> domain, std::list<Token> codomain,
-                                         std::list<FunctionCase> cases, bool pure):
+                                         std::vector<Token> domain, std::vector<Token> codomain,
+                                         std::vector<FunctionCase> cases, bool pure):
                                          name(std::move(name)), domain(std::move(domain)),
                                          codomain(std::move(codomain)), cases(std::move(cases)),
                                          pure(pure){}
@@ -37,15 +38,15 @@ void FunctionDeclaration::print() const {
         f_case.print();
 }
 
-llvm::Function *FunctionDeclaration::prototype_codegen(const std::unique_ptr<ParserData>& parser_data) const{
-    /*std::vector<llvm::Type*> dom(domain.size(), llvm::Type::getInt32Ty(*parser_data->context));
+llvm::Function *FunctionDeclaration::prototype_codegen(ParserData& parser_data) const{
+    /*std::vector<llvm::Type*> dom(domain.size(), llvm::Type::getInt32Ty(*parser_data.context));
     llvm::FunctionType* ft =
             llvm::FunctionType::get(llvm::Type::getInt32Ty(
-                    *parser_data->context), dom, false);
+                    *parser_data.context), dom, false);
     llvm::Function* f =
             llvm::Function::Create(ft,
                                    llvm::Function::ExternalLinkage,
-                                   name, *parser_data->module);
+                                   name, *parser_data.module);
 
     unsigned char i = 'a';
     for(auto& arg: f->args())
@@ -55,12 +56,12 @@ llvm::Function *FunctionDeclaration::prototype_codegen(const std::unique_ptr<Par
     std::vector<llvm::Type*> dom;
     for(const auto& token: domain) {
         if(token.get_value() != "void")
-            dom.push_back(parser_data->get_primitive(token.get_value()));
+            dom.push_back(parser_data.get_primitive(token.get_value()));
     }
-    llvm::Type* returnType = parser_data->get_primitive(codomain.front().get_value());
+    llvm::Type* returnType = parser_data.get_primitive(codomain.front().get_value());
 
     llvm::FunctionType* ft = llvm::FunctionType::get(returnType, dom, false);
-    llvm::Function* f = llvm::Function::Create(ft, llvm::Function::ExternalLinkage, name, *parser_data->module);
+    llvm::Function* f = llvm::Function::Create(ft, llvm::Function::ExternalLinkage, name, *parser_data.module);
     if (cases.size() <= 1) // use those names
     {
         int i = 0;
@@ -84,15 +85,15 @@ llvm::Function *FunctionDeclaration::prototype_codegen(const std::unique_ptr<Par
     return f;
 }
 
-llvm::Function* FunctionDeclaration::codegen(const std::unique_ptr<ParserData>& parser_data) const {
+llvm::Function* FunctionDeclaration::codegen(ParserData& parser_data) const {
     // get or create function prototype
-    llvm::Function* f = parser_data->module->getFunction(name);
+    llvm::Function* f = parser_data.module->getFunction(name);
     if (!f) f = prototype_codegen(parser_data);
     if (!f || !f->empty()) return nullptr;
 
     // entry + builder setup
-    llvm::BasicBlock* entry = llvm::BasicBlock::Create(*parser_data->context, "entry", f);
-    parser_data->builder->SetInsertPoint(entry);
+    llvm::BasicBlock* entry = llvm::BasicBlock::Create(*parser_data.context, "entry", f);
+    parser_data.builder->SetInsertPoint(entry);
 
     // collect args
     std::vector<llvm::Value*> args;
@@ -100,84 +101,116 @@ llvm::Function* FunctionDeclaration::codegen(const std::unique_ptr<ParserData>& 
 
     // only one case, we can optimize some stuff:
     if (cases.size() == 1) {
-        parser_data->enter_scope();
-
-        // register each SSA argument directly
-        for (auto &arg : f->args()) {
-            parser_data->add_value(arg.getName().str(),
-                                   &arg,                // the SSA value
-                                   arg.getType(),
-                                   /*isGlobal=*/false);
+        parser_data.enter_scope();
+        auto arg_it = f->arg_begin();
+        for (const auto& input_token : cases.front().inputs) {
+             if (input_token.get_token_kind() == IDENTIFIER) {
+                 // It's a variable argument
+                 llvm::Value* arg_val = &*arg_it;
+                 std::string arg_name = input_token.get_value();
+                 parser_data.add_value(arg_name, arg_val, arg_val->getType(), false);
+             }
+             if (arg_it != f->arg_end()) ++arg_it;
         }
 
-        // codegen the body & return
-        llvm::Value *retV = cases.front().codegen(parser_data);
-        parser_data->builder->CreateRet(retV);
-        parser_data->exit_scope();
+        //codegen the body & return
+        llvm::Value* retV = cases.front().codegen(parser_data);
+        if (retV) {
+            // Check if block already has terminator (e.g. from nested control flow - unlikely for single expr but possible if expression involves control flow)
+            if (!parser_data.builder->GetInsertBlock()->getTerminator()) {
+                 parser_data.builder->CreateRet(retV);
+            }
+        } else {
+            // Error in body codegen
+            std::cerr << "Codegen failed for function body: " << name << std::endl;
+            f->eraseFromParent(); // Remove the broken function from module
+            parser_data.exit_scope();
+            return nullptr;
+        }
+        
+        parser_data.exit_scope();
         return f;
     }
 
     // prepare blocks: one match block per case + a failure block
     std::vector<llvm::BasicBlock*> matchBlocks;
-    for (size_t i = 0; i < cases.size(); ++i)
-        matchBlocks.push_back(llvm::BasicBlock::Create(*parser_data->context, "case" + std::to_string(i), f));
-    llvm::BasicBlock* failBlock = llvm::BasicBlock::Create(*parser_data->context, "no_match", f);
+    for (size_t i = 0; i < cases.size(); ++i) {
+        matchBlocks.push_back(llvm::BasicBlock::Create(*parser_data.context, "case" + std::to_string(i), f));
+    }
+    llvm::BasicBlock* failBlock = llvm::BasicBlock::Create(*parser_data.context, "no_match", f);
 
     // jump from entry to first case
-    parser_data->builder->CreateBr(matchBlocks[0]);
+    parser_data.builder->CreateBr(matchBlocks[0]);
 
-    // emit each case
     size_t i = 0;
     // emit each case
     for (const auto& [inputs, output] : cases) {
         // set insertion point to the current match block
-        parser_data->builder->SetInsertPoint(matchBlocks[i]);
+        parser_data.builder->SetInsertPoint(matchBlocks[i]);
 
         // build runtime test (cond) over arguments
         llvm::Value* cond = nullptr;
+        // Use f->args() if 'args' vector is not available or reliable
         auto argIt = args.begin();
         for (const auto& tok : inputs) {
-            if (tok.get_token_kind() == UNDERSCORE) {
-                // wildcard, skip
-            }
-            else if (tok.get_token_kind() == LITERAL) {
+            if (argIt == args.end()) break;
+
+            if (tok.get_token_kind() == LITERAL) {
                 const int lit = std::stoi(tok.get_value());
-                const auto cmp = parser_data->builder->CreateICmpEQ(
+                const auto cmp = parser_data.builder->CreateICmpEQ(
                     *argIt,
-                    llvm::ConstantInt::get(parser_data->get_primitive("int"), lit)
+                    llvm::ConstantInt::get(parser_data.get_primitive("int"), lit)
                 );
-                cond = cond ? parser_data->builder->CreateAnd(cond, cmp) : cmp;
+                // Wait, logic 'cond = cond ? AND : cmp' implies if checking multiple args, ALL must match (AND).
+                // Yes, pattern matching (a, b) = ... means a AND b match.
+                // But previous code logic was:
+                /* cond = cond ? parser_data.builder->CreateAnd(cond, cmp) : cmp; */
+                // However, CreateAnd needs correct block? Builder is set to matchBlocks[i]. Ok.
+                if (cond) {
+                     cond = parser_data.builder->CreateAnd(cond, cmp);
+                } else {
+                     cond = cmp;
+                }
             }
             ++argIt;
         }
+        
         if (!cond)
-            cond = llvm::ConstantInt::getTrue(*parser_data->context);
+            cond = llvm::ConstantInt::getTrue(*parser_data.context);
 
-        // prepare body and next-case blocks
-        llvm::BasicBlock* body = llvm::BasicBlock::Create(*parser_data->context, "body" + std::to_string(i), f);
+        // prepare body blocks
+        llvm::BasicBlock* body = llvm::BasicBlock::Create(*parser_data.context, "body" + std::to_string(i), f);
         llvm::BasicBlock* next = (i + 1 < cases.size()) ? matchBlocks[i + 1] : failBlock;
-        parser_data->builder->CreateCondBr(cond, body, next);
+        
+        parser_data.builder->CreateCondBr(cond, body, next);
 
         // emit case body
-        parser_data->builder->SetInsertPoint(body);
-        parser_data->enter_scope();
+        parser_data.builder->SetInsertPoint(body);
+        parser_data.enter_scope();
         argIt = args.begin();
         for (const auto& tok : inputs) {
+            if (argIt == args.end()) break;
+            
             if (tok.get_token_kind() == IDENTIFIER) {
-                parser_data->add_value(tok.get_value(), *argIt, parser_data->get_primitive(tok.get_value()), false);
+                parser_data.add_value(tok.get_value(), *argIt, parser_data.get_primitive(tok.get_value()), false);
             }
             ++argIt;
         }
+        
         if (llvm::Value* retV = output->codegen(parser_data)) {
-            parser_data->builder->CreateRet(retV);
+            parser_data.builder->CreateRet(retV);
+        } else {
+             // Error in case body
+             std::cerr << "Codegen failed for case " << i << " in " << name << std::endl;
+             // Should we erase function effectively?
         }
-        parser_data->exit_scope();
+        parser_data.exit_scope();
 
         ++i;
     }
     // no pattern matched: emit unreachable (or errorraise)
-    parser_data->builder->SetInsertPoint(failBlock);
-    parser_data->builder->CreateUnreachable();
+    parser_data.builder->SetInsertPoint(failBlock);
+    parser_data.builder->CreateUnreachable();
 
     return f;
 }
@@ -196,6 +229,6 @@ void FunctionCase::print() const {
     std::cout << std::endl;
 }
 
-llvm::Value *FunctionCase::codegen(const std::unique_ptr<ParserData>& parser_data) const {
+llvm::Value *FunctionCase::codegen(ParserData& parser_data) const {
     return output->codegen(parser_data);
 }

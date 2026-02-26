@@ -6,7 +6,7 @@
 
 #include <iostream>
 
-ASTBlock::ASTBlock(std::vector<std::shared_ptr<ASTDefinition>> definitions, std::shared_ptr<ASTValue> tail_expression):
+ASTBlock::ASTBlock(std::vector<std::unique_ptr<ASTDefinition>> definitions, std::unique_ptr<ASTValue> tail_expression):
     definitions(std::move(definitions)), tail_expression(std::move(tail_expression)) {}
 
 void ASTBlock::print() const
@@ -19,30 +19,23 @@ void ASTBlock::print() const
     tail_expression->print();
 }
 
-llvm::Value* ASTBlock::codegen(const std::unique_ptr<ParserData>& parser_data)
-{
-    // Enter a new scope for block‐local definitions
-    parser_data->enter_scope();
-    auto& builder = *parser_data->builder;
-    llvm::Value* last = nullptr;
 
-    // Codegen each definition
+
+llvm::Value* ASTBlock::codegen(ParserData& parser_data)
+{
+    parser_data.enter_scope();
+    llvm::Value* last = nullptr;
     for (const auto& def : definitions) {
-        last = def->codegen(parser_data);
-        if (!last) {
-            llvm::errs() << "Error in definition: ";
-            def->print();
-            parser_data->exit_scope();
+        if (!def->codegen(parser_data)) {
+            std::cerr << "Failed to codegen definition inside block." << std::endl;
+            parser_data.exit_scope();
             return nullptr;
         }
     }
-
-    // Evaluate the tail expression or return the last definition’s value
-    llvm::Value* result = tail_expression
-        ? tail_expression->codegen(parser_data)
-        : last;
-
-    // Exit scope and return
-    parser_data->exit_scope();
+    llvm::Value* result = nullptr;
+    if (tail_expression) {
+        result = tail_expression->codegen(parser_data);
+    }
+    parser_data.exit_scope();
     return result;
 }

@@ -10,12 +10,12 @@
 class ASTBlock final : public ASTValue
 { // a block is like in rust, a set of definitions and a tail expression
     public:
-    ASTBlock(std::vector<std::shared_ptr<ASTDefinition>>, std::shared_ptr<ASTValue>);
+    ASTBlock(std::vector<std::unique_ptr<ASTDefinition>>, std::unique_ptr<ASTValue>);
     void print() const override;
-    llvm::Value* codegen(const std::unique_ptr<ParserData>&) override;
+    llvm::Value* codegen(ParserData&) override;
     private:
-    std::vector<std::shared_ptr<ASTDefinition>> definitions;
-    std::shared_ptr<ASTValue> tail_expression;
+    std::vector<std::unique_ptr<ASTDefinition>> definitions;
+    std::unique_ptr<ASTValue> tail_expression;
 };
 
 #endif //ASTBLOCK_H

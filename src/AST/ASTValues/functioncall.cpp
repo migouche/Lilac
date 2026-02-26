@@ -19,12 +19,12 @@ void FunctionCall::print() const {
     std::cout << ") ";
 }
 
-FunctionCall::FunctionCall(std::string  name, std::list<std::shared_ptr<ASTValue>> arguments):
+FunctionCall::FunctionCall(std::string  name, std::vector<std::unique_ptr<ASTValue>> arguments):
     name(std::move(name)), arguments(std::move(arguments)){}
 
 
-llvm::Value *FunctionCall::codegen(const std::unique_ptr<ParserData>& parser_data) {
-    llvm::Function *callee = parser_data->module->getFunction(name);
+llvm::Value *FunctionCall::codegen(ParserData& parser_data) {
+    llvm::Function *callee = parser_data.module->getFunction(name);
     if(!callee) {
         std::cerr << "Unknown reference to: " << name << std::endl;
         throw std::runtime_error("Unknown function call");
@@ -44,5 +44,5 @@ llvm::Value *FunctionCall::codegen(const std::unique_ptr<ParserData>& parser_dat
         if(!args_v.back())
             return nullptr;
     }
-    return parser_data->builder->CreateCall(callee, args_v, "calltmp");
+    return parser_data.builder->CreateCall(callee, args_v, "calltmp");
 }

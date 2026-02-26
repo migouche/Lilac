@@ -1,16 +1,9 @@
+func fib int -> int
+{
+    fib(0) = 1;
+    fib(1) = 1;
+    fib(n) = sum(fib(sub(n, 1)), fib(sub(n, 2)));
+}
 func main void -> int {
-
-        let a = {
-            let x = 8;
-            let y = 7;
-            mul(x, y)
-        };
-        let b = {
-            let m = 9;
-            let n = 4;
-            mul(m, n)
-        };
-        let add = sum(a, b);
-        sum(add, 1)
-
+    fib(8);
 }

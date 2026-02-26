@@ -2,12 +2,14 @@
 // Created by migouche on 11/14/2023.
 //
 #include <iostream>
+#include <filesystem>
 #include <llvm/TargetParser/Host.h>
 #include <llvm/Support/TargetSelect.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include "compiler/compiler.h"
 
 #include <llvm/IR/Module.h>
+#include <llvm/IR/Verifier.h>
 
 #include "parser/parser.h"
 #include "parser/parser_data.h"
@@ -21,7 +23,7 @@
 // #include <clang/CodeGen/CodeGenAction.h>
 
 
-void Compiler::compile_file(const std::string& file,  const std::unique_ptr<ParserData>& parser_data) {
+void Compiler::compile_file(const std::string& file,  ParserData& parser_data) {
     Parser parser(file);
     trees.push_back(parser.get_tree());
 
@@ -39,15 +41,15 @@ Compiler::Compiler(const std::vector <std::string>& files, const std::string& ou
     //std::shared_ptr parser_data = std::make_shared<parser_data::ParserData>();
     data = std::make_unique<ParserData>();
 
-    LLVMOps::init(data);
+    LLVMOps::init(*data);
 
     for(const auto& f: files)
-        compile_file(f, data);
+        compile_file(f, *data);
 
 
     for(const auto& t: trees)
     {
-        t.codegen(data);
+        t.codegen(*data);
     }
 
     llvm::InitializeNativeTarget();
@@ -79,7 +81,12 @@ Compiler::Compiler(const std::vector <std::string>& files, const std::string& ou
         llvm::outs() << "Generated LLVM IR:\n";
         data->module->print(llvm::outs(), nullptr);
     }
-
+    
+    // Verify module before running passes
+    if (llvm::verifyModule(*data->module, &llvm::errs())) {
+        llvm::errs() << "Module verification failed!\n";
+        return;
+    }
 
     std::string output_object_file = "output.o";
     std::error_code EC;
@@ -107,7 +114,7 @@ Compiler::Compiler(const std::vector <std::string>& files, const std::string& ou
     } else {
         llvm::outs() << "Executable created: " << output << "\n";
         // delete the object file after linking
-        std::string delete_command = "rm output.o";
+        std::filesystem::remove("output.o");
         //std::system(delete_command.c_str());
 
     }

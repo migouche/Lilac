@@ -6,6 +6,7 @@
 #include "compiler/llvm-primitives/llvmops.h"
 
 #include <iostream>
+#include <ranges>
 #include <llvm/IR/Module.h>
 
 ParserData::ParserData() :  context(std::make_unique<llvm::LLVMContext>()),
@@ -56,18 +57,18 @@ void ParserData::add_value(const std::string &name, llvm::Value *value, llvm::Ty
 }
 
 llvm::Value* ParserData::get_value(const std::string &name) const {
-    for (auto scope: values){
-        if(scope.contains(name))
-            return std::get<llvm::Value*>(scope[name]);
+    for (const auto& scope: std::ranges::reverse_view(values)){
+        if(auto it = scope.find(name); it != scope.end())
+            return std::get<llvm::Value*>(it->second);
     }
     return nullptr;
 }
 
 llvm::Type* ParserData::get_type(const std::string &name) const
 {
-    for (auto scope: values){
-        if(scope.contains(name))
-            return std::get<llvm::Type*>(scope[name]);
+    for (const auto& scope: std::ranges::reverse_view(values)){
+        if(auto it = scope.find(name); it != scope.end())
+            return std::get<llvm::Type*>(it->second);
     }
     return nullptr;
 }

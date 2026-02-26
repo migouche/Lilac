@@ -13,13 +13,13 @@
 class Compiler
 {
 private:
-    void compile_file(const std::string& file,  const std::unique_ptr<ParserData>&);
+    void compile_file(const std::string& file,  ParserData&);
     std::vector<ASTTree> trees;
     std::unique_ptr<ParserData> data;
 
 public:
     explicit Compiler(const std::vector<std::string>&, const std::string& output = "a.out", int O = 0, bool debug = false);
-
+    
     ASTTree& get_tree(size_t i = 0);
 
     static std::string status();

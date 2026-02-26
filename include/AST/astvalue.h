@@ -14,7 +14,7 @@ class ASTValue
 public:
     virtual ~ASTValue() = default;
     virtual void print() const = 0;
-    virtual llvm::Value* codegen(const std::unique_ptr<ParserData>&) = 0;
+    virtual llvm::Value* codegen(ParserData&) = 0;
 };
 
 #endif //LILAC_ASTVALUE_H

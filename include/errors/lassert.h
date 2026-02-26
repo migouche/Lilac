@@ -5,18 +5,19 @@
 #ifndef LILAC_LASSERT_H
 #define LILAC_LASSERT_H
 
-#include <cassert>
+#include <iostream>
+#include <cstdlib>
 
 #ifdef NDEBUG
-
-    #define lassert(condition, text) ((void)0)
+    #define lassert(condition, text) static_cast<void>(0)
 #else
-#  define lassert(condition, text) if (!static_cast<bool>(condition)) {\
-    std::string func = __ASSERT_FUNCTION;                              \
-    func.append("\n\t");\
-    func.append(text);\
-    __assert_fail(#condition, __FILE__, __LINE__, func.c_str());}
+    #define lassert(condition, text) \
+        if (!(condition)) { \
+            std::cerr << "Assertion failed: " << #condition << ", file " << __FILE__ \
+                      << ", line " << __LINE__ << ", function " << __func__ \
+                      << ": " << (text) << std::endl; \
+            std::abort(); \
+        }
 #endif //NDEBUG
-
 
 #endif //LILAC_LASSERT_H

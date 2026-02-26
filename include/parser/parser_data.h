@@ -9,8 +9,10 @@
 #include <memory>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/IRBuilder.h>
-#include <map>
+#include <unordered_map>
 #include <queue>
+#include <vector>
+#include <string>
 
 
 struct ParserData{
@@ -35,12 +37,10 @@ public:
     std::string add_block(llvm::Function*);
     llvm::Function* get_block(const std::string& name);
 private:
-    //std::vector<std::map<std::string, llvm::Value*>> named_values; // will be used as a stack (push and pop back)
-    //std::vector<std::map<std::string, llvm::Type*>> named_types; // will be used as a stack (push and pop back)
-    std::vector<std::map<std::string, std::tuple<llvm::Value*, llvm::Type*>>> values; // will be used as a stack (push and pop back)
+    std::vector<std::unordered_map<std::string, std::tuple<llvm::Value*, llvm::Type*>>> values; // will be used as a stack (push and pop back)
     // when i get this working, i will merge values and types into one map
-    std::map<std::string, llvm::Type*> primitives;
-    std::map<std::string, llvm::Function*> blocks; // Will store blocks as functions
+    std::unordered_map<std::string, llvm::Type*> primitives;
+    std::unordered_map<std::string, llvm::Function*> blocks; // Will store blocks as functions
 
     size_t block_counter = 0; // used to generate unique block names
 };

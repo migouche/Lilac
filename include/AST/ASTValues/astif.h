@@ -9,22 +9,19 @@
 
 class ASTIf : public ASTValue{
 public:
-    ASTIf(std::shared_ptr<ASTValue> condition, std::shared_ptr<ASTValue> then_branch,
-          std::shared_ptr<ASTValue> else_branch);
+    ASTIf(std::unique_ptr<ASTValue> condition, std::unique_ptr<ASTValue> then_branch,
+          std::unique_ptr<ASTValue> else_branch);
 
-    [[nodiscard]] std::shared_ptr<ASTValue> get_condition() const { return condition; }
-    [[nodiscard]] std::shared_ptr<ASTValue> get_then_branch() const { return then_branch; }
-    [[nodiscard]] std::shared_ptr<ASTValue> get_else_branch() const { return else_branch; }
+    [[nodiscard]] ASTValue* get_condition() const { return condition.get(); }
+    [[nodiscard]] ASTValue* get_then_branch() const { return then_branch.get(); }
+    [[nodiscard]] ASTValue* get_else_branch() const { return else_branch.get(); }
 
-    llvm::Value *codegen(const std::unique_ptr<ParserData> &parser_data) override;
+    llvm::Value *codegen(ParserData &parser_data) override;
     void print() const override;
 
 private:
-    std::shared_ptr<ASTValue> condition;
-    std::shared_ptr<ASTValue> then_branch;
-    std::shared_ptr<ASTValue> else_branch;
+    std::unique_ptr<ASTValue> condition;
+    std::unique_ptr<ASTValue> then_branch;
+    std::unique_ptr<ASTValue> else_branch;
 };
-
-
-
 #endif //LILAC_ASTIF_H

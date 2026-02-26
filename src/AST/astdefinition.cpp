@@ -8,7 +8,7 @@
 #include <utility>
 #include <llvm/IR/Module.h>
 
-ASTDefinition::ASTDefinition(std::string  name, const std::shared_ptr<ASTValue>& value, const bool global) : global(global), name(std::move(name)), value(value) {}
+ASTDefinition::ASTDefinition(std::string  name, std::unique_ptr<ASTValue> value, const bool global) : global(global), name(std::move(name)), value(std::move(value)) {}
 
 void ASTDefinition::print() const
 {
@@ -16,10 +16,10 @@ void ASTDefinition::print() const
     value->print();
 }
 
-llvm::Value* ASTDefinition::codegen(const std::unique_ptr<ParserData>& parser_data) const
+llvm::Value* ASTDefinition::codegen(ParserData& parser_data) const
 {
-    auto& builder = *parser_data->builder;
-    llvm::Module* module = parser_data->module.get();
+    auto& builder = *parser_data.builder;
+    llvm::Module* module = parser_data.module.get();
 
     // Generate the initializer
     llvm::Value* initVal = value->codegen(parser_data);
@@ -48,7 +48,7 @@ llvm::Value* ASTDefinition::codegen(const std::unique_ptr<ParserData>& parser_da
             gv->setInitializer(constInit);
         }
 
-        parser_data->add_value(name, gv, initVal->getType(), /*global=*/true);
+        parser_data.add_value(name, gv, initVal->getType(), /*global=*/true);
         return gv;
     } else {
         // Local alloca in entry block
@@ -56,7 +56,7 @@ llvm::Value* ASTDefinition::codegen(const std::unique_ptr<ParserData>& parser_da
         llvm::IRBuilder<> tmpB(&fn->getEntryBlock(), fn->getEntryBlock().begin());
         llvm::AllocaInst* alloca = tmpB.CreateAlloca(initVal->getType(), /*arraySize=*/nullptr, name);
         builder.CreateStore(initVal, alloca);
-        parser_data->add_value(name, alloca, initVal->getType(), /*global=*/false);
+        parser_data.add_value(name, alloca, initVal->getType(), /*global=*/false);
         return alloca;
     }
 }

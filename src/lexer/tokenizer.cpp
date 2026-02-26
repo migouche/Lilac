@@ -12,7 +12,7 @@ using namespace lexer_functions;
 Tokenizer::Tokenizer(const std::string &path)
 {
     FileStream s(path);
-    tokens = std::list<Token>();
+    tokens = std::vector<Token>();
     while(!s.is_eof()) { // TODO: can def do this on the go but eh, it works
         std::string token = s.get_token();
         auto [pos, line] = s.get_pos();
@@ -49,7 +49,5 @@ Token Tokenizer::peek_token(size_t i) const {
     if(index + i >= tokens.size())
         throw std::runtime_error("Unexpected EOF");
 
-    auto it = tokens.begin();
-    std::advance(it, index + i);
-    return *it;
+    return tokens[index + i];
 }

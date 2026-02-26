@@ -8,14 +8,14 @@
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/IRBuilder.h>
 
-ASTIf::ASTIf(std::shared_ptr<ASTValue> condition, std::shared_ptr<ASTValue> then_branch,
-    std::shared_ptr<ASTValue> else_branch) :
+ASTIf::ASTIf(std::unique_ptr<ASTValue> condition, std::unique_ptr<ASTValue> then_branch,
+    std::unique_ptr<ASTValue> else_branch) :
 condition(std::move(condition)), then_branch(std::move(then_branch)), else_branch(std::move(else_branch)) {}
 
 
-llvm::Value *ASTIf::codegen(const std::unique_ptr<ParserData> &parser_data) {
-    llvm::IRBuilder<> &builder = *parser_data->builder;
-    llvm::LLVMContext &ctx = *parser_data->context;
+llvm::Value *ASTIf::codegen(ParserData &parser_data) {
+    llvm::IRBuilder<> &builder = *parser_data.builder;
+    llvm::LLVMContext &ctx = *parser_data.context;
 
     // Emit condition
     llvm::Value *condV = condition->codegen(parser_data);

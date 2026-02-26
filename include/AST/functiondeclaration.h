@@ -5,7 +5,8 @@
 #ifndef LILAC_FUNCTIONDECLARATION_H
 #define LILAC_FUNCTIONDECLARATION_H
 
-#include <list>
+#include <vector>
+#include <memory>
 
 #include "astdefinition.h"
 #include "lexer/token.h"
@@ -14,11 +15,11 @@
 
 struct FunctionCase
 {
-    std::list<Token> inputs;
-    //&std::list<Token> outputs; // TODO: must be an function call, for once functional programming saves us
-    std::shared_ptr<ASTValue> output;
+    std::vector<Token> inputs;
+    //&std::vector<Token> outputs; // TODO: must be an function call, for once functional programming saves us
+    std::unique_ptr<ASTValue> output;
 
-    [[nodiscard]] llvm::Value* codegen(const std::unique_ptr<ParserData>&) const;
+    [[nodiscard]] llvm::Value* codegen(ParserData&) const;
 
     void print() const;
 };
@@ -27,15 +28,15 @@ class FunctionDeclaration
 {
 private:
     std::string name;
-    std::list<Token> domain;
-    std::list<Token> codomain;
-    std::list<FunctionCase> cases;
+    std::vector<Token> domain;
+    std::vector<Token> codomain;
+    std::vector<FunctionCase> cases;
     bool pure;
 public:
-    FunctionDeclaration(std::string , std::list<Token>, std::list<Token>, std::list<FunctionCase>, bool);
+    FunctionDeclaration(std::string , std::vector<Token>, std::vector<Token>, std::vector<FunctionCase>, bool);
     void print() const;
-    [[nodiscard]] llvm::Function* codegen(const std::unique_ptr<ParserData>&) const;
-    [[nodiscard]] llvm::Function* prototype_codegen(const std::unique_ptr<ParserData>&) const;
+    [[nodiscard]] llvm::Function* codegen(ParserData&) const;
+    [[nodiscard]] llvm::Function* prototype_codegen(ParserData&) const;
 
 };
 

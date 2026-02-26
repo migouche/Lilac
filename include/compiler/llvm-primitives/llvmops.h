@@ -14,7 +14,7 @@ class LLVMOps {
 private:
     static std::map<std::string, llvm::Function*> primitive_functions;
 public:
-    static void init(const std::unique_ptr<ParserData> &parser_data);
+    static void init(ParserData &parser_data);
     static llvm::Function * find_function(const std::string &name);
 
     //static void call_function(const std::string &name, const std::unique_ptr<ParserData> &parser_data);

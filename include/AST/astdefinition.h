@@ -9,13 +9,13 @@
 class ASTDefinition
 {
 public:
-    ASTDefinition(std::string , const std::shared_ptr<ASTValue>&, bool global);
+    ASTDefinition(std::string , std::unique_ptr<ASTValue>, bool global);
     void print() const;
-    [[nodiscard]] llvm::Value* codegen(const std::unique_ptr<ParserData>&) const;
+    [[nodiscard]] llvm::Value* codegen(ParserData&) const;
 private:
     bool global;
     std::string name;
-    std::shared_ptr<ASTValue> value;
+    std::unique_ptr<ASTValue> value;
 };
 
 

@@ -13,7 +13,7 @@
 class Variable final : public ASTValue{
 public:
     explicit Variable(const Token&);
-    llvm::Value* codegen(const std::unique_ptr<ParserData>&) override;
+    llvm::Value* codegen(ParserData&) override;
     void print() const override;
 private:
     std::string name;

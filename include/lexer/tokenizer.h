@@ -5,13 +5,13 @@
 #ifndef LILAC_TOKENIZER_H
 #define LILAC_TOKENIZER_H
 
-#include <list>
+#include <vector>
 #include "token.h"
 
 class Tokenizer
 {
 private:
-    std::list<Token> tokens;
+    std::vector<Token> tokens;
     size_t index = 0;
 public:
     explicit Tokenizer(const std::string& path);

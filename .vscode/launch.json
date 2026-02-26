@@ -1,0 +1,88 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Lilac",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/cmake-build-debug/lilac",
+            "args": [
+                "data/function.llc",
+                "-g",
+                "-o",
+                "output.out"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "ASAN_OPTIONS",
+                    "value": "detect_leaks=0"
+                }
+            ],
+            "externalConsole": false,
+            "miDebuggerPath": "/usr/bin/gdb",
+            "MIMode": "gdb",
+            "preLaunchTask": "build"
+        },
+        {
+            "name": "Run Lilac (No Debug)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/cmake-build-debug/lilac",
+            "args": [
+                "data/function.llc",
+                "-g",
+                "-o",
+                "output.out"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "noDebug": true,
+            "preLaunchTask": "build"
+        },
+        {
+            "name": "Run Compiles (No Debug)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/cmake-build-debug/lilac",
+            "args": [
+                "data/compiles.llc",
+                "-o",
+                "output.out"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "noDebug": true,
+            "preLaunchTask": "build"
+        },
+        {
+            "name": "Compiles",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/cmake-build-debug/lilac",
+            "args": [
+                "data/compiles.llc",
+                "-o",            
+                "output.out"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                            {
+                    "name": "ASAN_OPTIONS",
+                    "value": "detect_leaks=0"
+                }
+            ],
+
+            "externalConsole": false,
+            "miDebuggerPath": "/usr/bin/gdb",
+            "MIMode": "gdb",
+            "preLaunchTask": "build"
+        }
+    ]
+}
