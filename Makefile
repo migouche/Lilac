@@ -27,6 +27,8 @@ INCLUDES = -I include/ -I /usr/local/include -I $(HOME)/local/include
 # Space-separated pkg-config libraries used by this project
 LIBS = -lkeystone #-L /usr/local/lib -L $(HOME)/local/lib
 
+ASAN_OPTS = detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1
+
 .PHONY: default_target
 default_target: release
 
@@ -75,7 +77,7 @@ run: $(BIN_PATH)/$(BIN_NAME)
 normal:
 	cmake --build cmake-build-debug --target lilac -j 10
 	@echo "Running $(BIN_NAME) (normal):"
-	ASAN_OPTIONS=detect_leaks=0 ./cmake-build-debug/lilac data/function.llc -g -o output.out
+	ASAN_OPTIONS=$(ASAN_OPTS) ./cmake-build-debug/lilac data/function.llc -g -o output.out
 
 .SILENT: run-normal
 run-normal: normal
@@ -86,7 +88,7 @@ run-normal: normal
 compiles:
 	cmake --build cmake-build-debug --target lilac -j 10
 	@echo "Running $(BIN_NAME) (compiles):"
-	ASAN_OPTIONS=detect_leaks=0 ./cmake-build-debug/lilac data/compiles.llc -o output.out
+	ASAN_OPTIONS=$(ASAN_OPTS) ./cmake-build-debug/lilac data/compiles.llc -o output.out
 
 .SILENT: run-compiles
 run-compiles: compiles
@@ -97,7 +99,7 @@ run-compiles: compiles
 parse:
 	cmake --build cmake-build-debug --target lilac -j 10
 	@echo "Running $(BIN_NAME) (parse):"
-	ASAN_OPTIONS=detect_leaks=0 ./cmake-build-debug/lilac data/function.llc -p
+	ASAN_OPTIONS=$(ASAN_OPTS) ./cmake-build-debug/lilac data/function.llc -p
 
 
 .PHONY: clean
