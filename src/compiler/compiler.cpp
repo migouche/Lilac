@@ -19,6 +19,8 @@
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/IR/LegacyPassManager.h"
+// import triple
+#include <llvm/TargetParser/Triple.h>
 //#include "clang/Lex/PreprocessorOptions.h"
 // #include <clang/CodeGen/CodeGenAction.h>
 
@@ -39,6 +41,10 @@ std::string Compiler::status() {
 
 Compiler::Compiler(const std::vector <std::string>& files, const std::string& output, int O, bool debug) {
     //std::shared_ptr parser_data = std::make_shared<parser_data::ParserData>();
+    if (debug){
+        std::cout << "Using LLVM version: " << LLVM_VERSION_STRING << std::endl;
+    }
+
     data = std::make_unique<ParserData>();
 
     LLVMOps::init(*data);
@@ -70,7 +76,8 @@ Compiler::Compiler(const std::vector <std::string>& files, const std::string& ou
     llvm::TargetOptions opt;
 
     auto rm = std::optional<llvm::Reloc::Model>();
-    const std::unique_ptr<llvm::TargetMachine> targetMachine (target->createTargetMachine(target_triple, "generic", "", opt, rm));
+    llvm::Triple triple(target_triple);   
+    const std::unique_ptr<llvm::TargetMachine> targetMachine (target->createTargetMachine(triple, "generic", "", opt, rm));
 
     // mem input stream
 

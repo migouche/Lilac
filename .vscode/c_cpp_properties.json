@@ -1,9 +1,10 @@
 {
     "configurations": [
         {
-            "name": "CMake",
-            "compileCommands": "${config:cmake.buildDirectory}/compile_commands.json",
-            "configurationProvider": "ms-vscode.cmake-tools"
+            "name": "Linux",
+            "compileCommands": "${workspaceFolder}/compile_commands.json",
+            "cStandard": "c17",
+            "cppStandard": "c++23"
         }
     ],
     "version": 4

@@ -74,21 +74,25 @@ run: $(BIN_PATH)/$(BIN_NAME)
 	./$(BIN_PATH)/$(BIN_NAME)
 
 .SILENT: normal
-normal:
-	cmake --build cmake-build-debug --target lilac -j 10
+debug:
+	cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+	ln -sf build/compile_commands.json .
+	cmake --build build --target lilac -j 10
 	@echo "Running $(BIN_NAME) (normal):"
-	ASAN_OPTIONS=$(ASAN_OPTS) ./cmake-build-debug/lilac data/function.llc -g -o output.out
+	ASAN_OPTIONS=$(ASAN_OPTS) ./build/lilac data/function.llc -g -o output.out
 
 .SILENT: run-normal
-run-normal: normal
+run-debug: normal
 	@echo "Running output.out:"
 	-./output.out; echo "Exit code: $$?"
 
 .SILENT: compiles
 compiles:
-	cmake --build cmake-build-debug --target lilac -j 10
+	cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+	ln -sf build/compile_commands.json .
+	cmake --build build/ --target lilac -j 10
 	@echo "Running $(BIN_NAME) (compiles):"
-	ASAN_OPTIONS=$(ASAN_OPTS) ./cmake-build-debug/lilac data/compiles.llc -o output.out
+	ASAN_OPTIONS=$(ASAN_OPTS) ./build/lilac data/compiles.llc -o output.out
 
 .SILENT: run-compiles
 run-compiles: compiles
@@ -97,9 +101,11 @@ run-compiles: compiles
 
 .SILENT: parse
 parse:
-	cmake --build cmake-build-debug --target lilac -j 10
+	cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+	ln -sf build/compile_commands.json .
+	cmake --build build/ --target lilac -j 10
 	@echo "Running $(BIN_NAME) (parse):"
-	ASAN_OPTIONS=$(ASAN_OPTS) ./cmake-build-debug/lilac data/function.llc -p
+	ASAN_OPTIONS=$(ASAN_OPTS) ./build/lilac data/function.llc -p
 
 
 .PHONY: clean
@@ -109,6 +115,10 @@ clean::
 	@echo "Deleting directories"
 	@$(RM) -r $(BUILD_PATH)
 	@$(RM) -r $(BIN_PATH)
+	@echo "Deleting outputs"
+	@$(RM) output.out
+	@$(RM) output
+	
 
 SHAREDLIBNAME = lilac.so
 EXENAME = lilac

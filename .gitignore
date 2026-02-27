@@ -39,3 +39,6 @@ build/
 .testudo/
 output
 output.out
+
+compile_commands.json
+.cache/
