@@ -8,18 +8,19 @@
 
 
 
-void ASTTree::print() const {
-    std::cout << "AST Tree:" << std::endl;
+std::ostream& ASTTree::print(std::ostream& os) const {
+    os << "AST Tree:" << std::endl;
     for (const auto& child: children) {
         if (std::holds_alternative<std::unique_ptr<FunctionDeclaration>>(child)) {
             const auto& func = std::get<std::unique_ptr<FunctionDeclaration>>(child);
-            func->print();
+            func->print(os);
         } else if (std::holds_alternative<std::unique_ptr<ASTDefinition>>(child)) {
             const auto& def = std::get<std::unique_ptr<ASTDefinition>>(child);
-            def->print();
+            def->print(os);
         }
     }
-    std::cout << "End of AST Tree." << std::endl;
+    os << "End of AST Tree." << std::endl;
+    return os;
 }
 
 ASTTree::ASTTree(std::vector<TopLevelDeclaration> l) : children(std::move(l)){}

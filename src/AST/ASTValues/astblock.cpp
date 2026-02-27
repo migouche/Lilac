@@ -9,14 +9,16 @@
 ASTBlock::ASTBlock(std::vector<std::unique_ptr<ASTDefinition>> definitions, std::unique_ptr<ASTValue> tail_expression):
     definitions(std::move(definitions)), tail_expression(std::move(tail_expression)) {}
 
-void ASTBlock::print() const
+std::ostream& ASTBlock::print(std::ostream& os) const
 {
-    std::cout << '\n';
+    os << '\n';
     for (const auto& def : definitions) {
-        def->print();
+        def->print(os);
     }
-    std::cout << "\n Tail: ";
-    tail_expression->print();
+    os << "\n Tail: ";
+    if (tail_expression)
+        tail_expression->print(os);
+    return os;
 }
 
 

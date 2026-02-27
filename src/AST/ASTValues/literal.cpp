@@ -11,7 +11,10 @@
 
 Literal::Literal(const Token& token): value(token.get_value()) {}
 
-void Literal::print() const {std::cout << value; }
+std::ostream& Literal::print(std::ostream& os) const {
+    os << value;
+    return os;
+}
 
 llvm::Value *Literal::codegen(ParserData& parser_data) {
     //TODO: WE WILL ONLY USE INTS FOR NOW

@@ -71,6 +71,34 @@ run: $(BIN_PATH)/$(BIN_NAME)
 	@echo "Running $(BIN_NAME):"
 	./$(BIN_PATH)/$(BIN_NAME)
 
+.SILENT: normal
+normal:
+	cmake --build cmake-build-debug --target lilac -j 10
+	@echo "Running $(BIN_NAME) (normal):"
+	ASAN_OPTIONS=detect_leaks=0 ./cmake-build-debug/lilac data/function.llc -g -o output.out
+
+.SILENT: run-normal
+run-normal: normal
+	@echo "Running output.out:"
+	-./output.out; echo "Exit code: $$?"
+
+.SILENT: compiles
+compiles:
+	cmake --build cmake-build-debug --target lilac -j 10
+	@echo "Running $(BIN_NAME) (compiles):"
+	ASAN_OPTIONS=detect_leaks=0 ./cmake-build-debug/lilac data/compiles.llc -o output.out
+
+.SILENT: run-compiles
+run-compiles: compiles
+	@echo "Running output.out:"
+	-./output.out; echo "Exit code: $$?"
+
+.SILENT: parse
+parse:
+	cmake --build cmake-build-debug --target lilac -j 10
+	@echo "Running $(BIN_NAME) (parse):"
+	ASAN_OPTIONS=detect_leaks=0 ./cmake-build-debug/lilac data/function.llc -p
+
 
 .PHONY: clean
 clean::

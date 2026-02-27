@@ -9,14 +9,15 @@
 
 #include <llvm/IR/Module.h>
 
-void FunctionCall::print() const {
-    std::cout << name << " ( ";
+std::ostream& FunctionCall::print(std::ostream& os) const {
+    os << name << " ( ";
     for(const auto& arg: arguments)
     {
-        arg->print();
-        std::cout << " , ";
+        arg->print(os);
+        os << " , ";
     }
-    std::cout << ") ";
+    os << ") ";
+    return os;
 }
 
 FunctionCall::FunctionCall(std::string  name, std::vector<std::unique_ptr<ASTValue>> arguments):

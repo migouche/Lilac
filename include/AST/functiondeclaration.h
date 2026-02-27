@@ -21,7 +21,10 @@ struct FunctionCase
 
     [[nodiscard]] llvm::Value* codegen(ParserData&) const;
 
-    void print() const;
+    std::ostream& print(std::ostream& os) const;
+    friend std::ostream& operator<<(std::ostream& os, const FunctionCase& fc) {
+        return fc.print(os);
+    }
 };
 
 class FunctionDeclaration
@@ -34,7 +37,10 @@ private:
     bool pure;
 public:
     FunctionDeclaration(std::string , std::vector<Token>, std::vector<Token>, std::vector<FunctionCase>, bool);
-    void print() const;
+    std::ostream& print(std::ostream& os) const;
+    friend std::ostream& operator<<(std::ostream& os, const FunctionDeclaration& fd) {
+        return fd.print(os);
+    }
     [[nodiscard]] llvm::Function* codegen(ParserData&) const;
     [[nodiscard]] llvm::Function* prototype_codegen(ParserData&) const;
 

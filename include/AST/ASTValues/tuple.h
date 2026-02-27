@@ -14,7 +14,7 @@ class Tuple final : public ASTValue
 public:
     explicit Tuple(std::vector<std::unique_ptr<ASTValue>> elements); //
 
-    void print() const override;
+    std::ostream& print(std::ostream& os) const override;
     llvm::Value * codegen(ParserData&) override;
 private:
     std::vector<std::unique_ptr<ASTValue>> elements;

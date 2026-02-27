@@ -17,7 +17,7 @@ public:
     [[nodiscard]] ASTValue* get_else_branch() const { return else_branch.get(); }
 
     llvm::Value *codegen(ParserData &parser_data) override;
-    void print() const override;
+    std::ostream& print(std::ostream& os) const override;
 
 private:
     std::unique_ptr<ASTValue> condition;

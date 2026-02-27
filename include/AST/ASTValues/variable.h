@@ -14,7 +14,7 @@ class Variable final : public ASTValue{
 public:
     explicit Variable(const Token&);
     llvm::Value* codegen(ParserData&) override;
-    void print() const override;
+    std::ostream& print(std::ostream& os) const override;
 private:
     std::string name;
 };

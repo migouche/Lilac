@@ -66,5 +66,12 @@ llvm::Value *ASTIf::codegen(ParserData &parser_data) {
     return phi;
 }
 
-void ASTIf::print() const {
+std::ostream& ASTIf::print(std::ostream& os) const {
+    os << "if ";
+    condition->print(os);
+    os << " then ";
+    then_branch->print(os);
+    os << " else ";
+    else_branch->print(os);
+    return os;
 }

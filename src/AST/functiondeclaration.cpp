@@ -18,24 +18,25 @@ FunctionDeclaration::FunctionDeclaration(std::string name,
                                          codomain(std::move(codomain)), cases(std::move(cases)),
                                          pure(pure){}
 
-void FunctionDeclaration::print() const {
-    std::cout << "name: " << name << std::endl;
-    std::cout << "purity: " << (pure ? "pure": "impure") << std::endl;
+std::ostream& FunctionDeclaration::print(std::ostream& os) const {
+    os << "name: " << name << std::endl;
+    os << "purity: " << (pure ? "pure": "impure") << std::endl;
 
-    std::cout << "domain: ";
+    os << "domain: ";
     for(auto& token: domain) {
-        std::cout << token.get_value();
-        std::cout << ", ";
+        os << token.get_value();
+        os << ", ";
     }
 
-    std::cout << "\ncodomain: ";
+    os << "\ncodomain: ";
     for(const auto& token: codomain) {
-        std::cout << token.get_value();
-        std::cout << ", ";
+        os << token.get_value();
+        os << ", ";
     }
-    std::cout << "\ncases: ";
+    os << "\ncases: ";
     for(const auto& f_case: cases)
-        f_case.print();
+        f_case.print(os);
+    return os;
 }
 
 llvm::Function *FunctionDeclaration::prototype_codegen(ParserData& parser_data) const{
@@ -215,18 +216,19 @@ llvm::Function* FunctionDeclaration::codegen(ParserData& parser_data) const {
     return f;
 }
 
-void FunctionCase::print() const {
-    std::cout << "function case: \n\tinputs: \n\t";
+std::ostream& FunctionCase::print(std::ostream& os) const {
+    os << "function case: \n\tinputs: \n\t";
     for (const auto& input: inputs)
     {
-        input.print();
-        std::cout << ", ";
+        input.print(os);
+        os << ", ";
     }
 
-    std::cout << "\n\toutput: ";
+    os << "\n\toutput: ";
 
-    output->print();
-    std::cout << std::endl;
+    output->print(os);
+    os << std::endl;
+    return os;
 }
 
 llvm::Value *FunctionCase::codegen(ParserData& parser_data) const {

@@ -7,14 +7,15 @@
 
 Tuple::Tuple(std::vector<std::unique_ptr<ASTValue>> elements): elements(std::move(elements)) {}
 
-void Tuple::print() const {
-    std::cout << " [ ";
+std::ostream& Tuple::print(std::ostream& os) const {
+    os << " [ ";
     for(const auto& c: elements)
     {
-        c->print();
-        std::cout << ", ";
+        c->print(os);
+        os << ", ";
     }
-    std::cout << " ] ";
+    os << " ] ";
+    return os;
 }
 
 llvm::Value *Tuple::codegen(ParserData&) {

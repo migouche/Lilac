@@ -55,7 +55,7 @@ int main(const int argc, char** argv) {
             for (const auto& file : input_files) {
                 Parser parser(file);
                 auto tree = parser.get_tree();
-                tree.print();
+                tree.print(std::cout);
             }
         } else {
             Compiler compiler(input_files, output_file, O, debug);

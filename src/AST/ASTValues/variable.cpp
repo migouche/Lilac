@@ -27,8 +27,8 @@ llvm::Value *Variable::codegen(ParserData &parser_data) {
 Variable::Variable(const Token& token): name(token.get_value()) {}
 
 
-void Variable::print() const {
-    std::cout << name << std::endl;
-
+std::ostream& Variable::print(std::ostream& os) const {
+    os << name << std::endl;
+    return os;
 }
 

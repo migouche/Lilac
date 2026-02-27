@@ -21,11 +21,12 @@ bool Token::operator==(const Token &other) const {
     return kind == other.kind && value == other.value;
 }
 
-void Token::print() const {
+std::ostream& Token::print(std::ostream& os) const {
     if(kind == IDENTIFIER || kind == KEYWORD)
-        std::cout << value;
+        os << value;
     else
-        std::cout << get_string_from_token(kind);
+        os << get_string_from_token(kind);
+    return os;
 }
 
 

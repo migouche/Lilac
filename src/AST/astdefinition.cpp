@@ -10,10 +10,11 @@
 
 ASTDefinition::ASTDefinition(std::string  name, std::unique_ptr<ASTValue> value, const bool global) : global(global), name(std::move(name)), value(std::move(value)) {}
 
-void ASTDefinition::print() const
+std::ostream& ASTDefinition::print(std::ostream& os) const
 {
-    std::cout << "Definition: " << name << " = ";
-    value->print();
+    os << "Definition: " << name << " = ";
+    value->print(os);
+    return os;
 }
 
 llvm::Value* ASTDefinition::codegen(ParserData& parser_data) const

@@ -20,7 +20,10 @@ private:
 public:
     void add_child(std::unique_ptr<FunctionDeclaration>);
     void add_child(std::unique_ptr<ASTDefinition>);
-    void print() const;
+    std::ostream& print(std::ostream& os) const;
+    friend std::ostream& operator<<(std::ostream& os, const ASTTree& tree) {
+        return tree.print(os);
+    }
     ASTTree();
     explicit ASTTree(std::vector<TopLevelDeclaration>);
     void codegen(ParserData&) const;

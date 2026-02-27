@@ -10,7 +10,10 @@ class ASTDefinition
 {
 public:
     ASTDefinition(std::string , std::unique_ptr<ASTValue>, bool global);
-    void print() const;
+    std::ostream& print(std::ostream& os) const;
+    friend std::ostream& operator<<(std::ostream& os, const ASTDefinition& def) {
+        return def.print(os);
+    }
     [[nodiscard]] llvm::Value* codegen(ParserData&) const;
 private:
     bool global;

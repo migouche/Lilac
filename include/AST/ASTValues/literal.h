@@ -15,7 +15,7 @@ private:
 public:
     explicit Literal(const Token& token);
 
-    void print() const override;
+    std::ostream& print(std::ostream& os) const override;
     llvm::Value * codegen(ParserData&) override;
 
 };
