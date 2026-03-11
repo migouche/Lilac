@@ -1,3 +1,4 @@
+#include "AST/ASTValues/enumaccess.h"
 #include <iostream>
 #include <algorithm>
 #include <ranges>
@@ -21,6 +22,18 @@ bool stack_has(const std::vector<std::vector<std::string>>& stack, const std::st
     return false;
 }
 
+static void extract_bindings(ASTValue* pat, std::vector<std::string>& bindings) {
+    if (auto var = dynamic_cast<Variable*>(pat)) {
+        if (var->get_name() != "_") {
+            bindings.push_back(var->get_name());
+        }
+    } else if (auto ea = dynamic_cast<EnumAccess*>(pat)) {
+        for (const auto& p : ea->get_payload()) {
+            extract_bindings(p.get(), bindings);
+        }
+    }
+}
+
 Parser::Parser(const std::string &path): tokenizer(std::make_unique<Tokenizer>(path)) {
     token_stack.emplace_back(); // Global scope
 }
@@ -31,6 +44,31 @@ Parser::Parser(const std::string &path): tokenizer(std::make_unique<Tokenizer>(p
 
 std::expected<std::unique_ptr<ASTValue>, std::string> Parser::parse_value() {
     auto token = tokenizer->peek_token();
+
+    if (token.get_token_kind() == DOT) {
+        tokenizer->get_token(); // consume '.'
+        auto variant = tokenizer->get_token();
+        EXPECT(variant.get_token_kind() == IDENTIFIER, "Expected identifier after '.' for enum access");
+        
+        std::vector<std::unique_ptr<ASTValue>> payload;
+        if (tokenizer->peek_token().get_token_kind() == OPEN_PARENS) {
+            tokenizer->get_token(); // consume '('
+            while (tokenizer->peek_token().get_token_kind() != CLOSE_PARENS) {
+                auto val = parse_value();
+                if (!val) return std::unexpected(val.error());
+                payload.push_back(std::move(*val));
+
+                if (tokenizer->peek_token().get_token_kind() == COMMA) {
+                    tokenizer->get_token();
+                } else if (tokenizer->peek_token().get_token_kind() != CLOSE_PARENS) {
+                    return std::unexpected("Expected comma or ')' in enum payload");
+                }
+            }
+            tokenizer->get_token(); // consume ')'
+        }
+        
+        return std::make_unique<EnumAccess>(variant.get_value(), std::move(payload));
+    }
 
     if (token.get_token_kind() == OPEN_SQUARE_BRACE) {
         auto res = parse_tuple();
@@ -242,19 +280,28 @@ std::expected<std::unique_ptr<FunctionDeclaration>, std::string> Parser::parse_f
             auto case_name_token = tokenizer->get_token(); // consume name
             tokenizer->get_token(); // consume '('
             
-            std::vector<Token> inputs;
+            std::vector<std::unique_ptr<ASTValue>> inputs;
             while (tokenizer->peek_token().get_token_kind() != CLOSE_PARENS) {
-                inputs.push_back(tokenizer->get_token());
+                auto pat = parse_pattern();
+                if (!pat) return std::unexpected(pat.error());
+                inputs.push_back(std::move(*pat));
+
                 if (tokenizer->peek_token().get_token_kind() == COMMA) tokenizer->get_token();
             }
             tokenizer->get_token(); // consume ')'
             
             // Add inputs to scope
             token_stack.emplace_back(); 
-            for(const auto& t : inputs) {
-                token_stack.back().push_back(t.get_value());
+            std::vector<std::string> bindings;
+            for(const auto& pat : inputs) {
+                extract_bindings(pat.get(), bindings);
+            }
+            for(const auto& b : bindings) {
+                token_stack.back().push_back(b);
             }
 
+            // Also check for `where` clause? The prompt has `is_greater_than_seven(n) where(less_than(n, 8)) = false;`
+            // Let's stick strictly to what was there or what's necessary right now:
             EXPECT(tokenizer->get_token().get_token_kind() == EQUAL, "Expected '=' in function case");
             
             auto val = parse_value();
@@ -262,7 +309,7 @@ std::expected<std::unique_ptr<FunctionDeclaration>, std::string> Parser::parse_f
 
             EXPECT(tokenizer->get_token().get_token_kind() == SEMICOLON, "Expected ';' at end of case");
             
-            cases.push_back({inputs, std::move(*val)});
+            cases.push_back({std::move(inputs), std::move(*val)});
             token_stack.pop_back(); 
         } else {
             // Implicit case (body directly)
@@ -330,6 +377,44 @@ std::expected<std::unique_ptr<FunctionDeclaration>, std::string> Parser::parse_f
     return std::make_unique<FunctionDeclaration>(name_token.get_value(), domain, codomain, std::move(cases), pure);
 }
 
+std::expected<std::unique_ptr<EnumDeclaration>, std::string> Parser::parse_enum() {
+    tokenizer->get_token(); // consume 'enum'
+    auto name_token = tokenizer->get_token();
+    EXPECT(name_token.get_token_kind() == IDENTIFIER, "Expected identifier for enum name");
+
+    EXPECT(tokenizer->get_token().get_token_kind() == OPEN_CURLEY_BRACE, "Expected '{' after enum name");
+
+    std::vector<EnumVariant> variants;
+    while (tokenizer->peek_token().get_token_kind() != CLOSE_CURLEY_BRACE) {
+        auto variant_name = tokenizer->get_token();
+        EXPECT(variant_name.get_token_kind() == IDENTIFIER, "Expected identifier for enum variant");
+
+        EnumVariant variant;
+        variant.name = variant_name.get_value();
+        known_enum_variants.insert(variant.name);
+
+        if (tokenizer->peek_token().get_token_kind() == OPEN_PARENS) {
+            tokenizer->get_token(); // consume '('
+            auto payload_type = tokenizer->get_token();
+            EXPECT(payload_type.get_token_kind() == IDENTIFIER, "Expected identifier for enum payload type");
+            variant.payload_type = payload_type.get_value();
+            EXPECT(tokenizer->get_token().get_token_kind() == CLOSE_PARENS, "Expected ')' after enum payload type");
+        }
+
+        variants.push_back(variant);
+
+        if (tokenizer->peek_token().get_token_kind() == COMMA) {
+            tokenizer->get_token(); // consume ','
+        } else {
+            break;
+        }
+    }
+
+    EXPECT(tokenizer->get_token().get_token_kind() == CLOSE_CURLEY_BRACE, "Expected '}' after enum variants");
+
+    return std::make_unique<EnumDeclaration>(name_token.get_value(), std::move(variants));
+}
+
 ASTTree Parser::get_tree() {
     ASTTree tree;
     while (!tokenizer->end_of_tokens()) {
@@ -342,10 +427,78 @@ ASTTree Parser::get_tree() {
             auto def = parse_definition();
             if (def) tree.add_child(std::move(*def));
             else std::cerr << "Error parsing definition: " << def.error() << std::endl;
+        } else if (peek.get_value() == "enum") {
+            auto enum_decl = parse_enum();
+            if (enum_decl) tree.add_child(std::move(*enum_decl));
+            else std::cerr << "Error parsing enum: " << enum_decl.error() << std::endl;
         } else {
             // consume unknown to avoid infinite loop
             tokenizer->get_token();
         }
     }
     return tree;
+}
+
+std::expected<std::unique_ptr<ASTValue>, std::string> Parser::parse_pattern() {
+    auto token = tokenizer->peek_token();
+
+    if (token.get_token_kind() == DOT) {
+        tokenizer->get_token(); // consume '.'
+        auto variant = tokenizer->get_token();
+        EXPECT(variant.get_token_kind() == IDENTIFIER, "Expected identifier after '.' for enum pattern");
+        
+        std::vector<std::unique_ptr<ASTValue>> payload;
+        if (tokenizer->peek_token().get_token_kind() == OPEN_PARENS) {
+            tokenizer->get_token(); // consume '('
+            while (tokenizer->peek_token().get_token_kind() != CLOSE_PARENS) {
+                auto val = parse_pattern();
+                if (!val) return std::unexpected(val.error());
+                payload.push_back(std::move(*val));
+
+                if (tokenizer->peek_token().get_token_kind() == COMMA) {
+                    tokenizer->get_token();
+                } else if (tokenizer->peek_token().get_token_kind() != CLOSE_PARENS) {
+                    return std::unexpected("Expected comma or ')' in enum pattern payload");
+                }
+            }
+            tokenizer->get_token(); // consume ')'
+        }
+        
+        return std::make_unique<EnumAccess>(variant.get_value(), std::move(payload));
+    }
+
+    if (token.get_token_kind() == IDENTIFIER) {
+        if (known_enum_variants.contains(token.get_value())) {
+            tokenizer->get_token(); // consume
+            std::vector<std::unique_ptr<ASTValue>> payload;
+            if (tokenizer->peek_token().get_token_kind() == OPEN_PARENS) {
+                tokenizer->get_token(); // consume '('
+                while (tokenizer->peek_token().get_token_kind() != CLOSE_PARENS) {
+                    auto val = parse_pattern();
+                    if (!val) return std::unexpected(val.error());
+                    payload.push_back(std::move(*val));
+
+                    if (tokenizer->peek_token().get_token_kind() == COMMA) {
+                        tokenizer->get_token();
+                    } else if (tokenizer->peek_token().get_token_kind() != CLOSE_PARENS) {
+                        return std::unexpected("Expected comma or ')' in enum pattern payload");
+                    }
+                }
+                tokenizer->get_token(); // consume ')'
+            }
+            return std::make_unique<EnumAccess>(token.get_value(), std::move(payload));
+        }
+
+        // In a pattern, an identifier is just a variable binding (or wildcard if '_')
+        tokenizer->get_token(); // consume
+        return std::make_unique<Variable>(token);
+    }
+
+    if (token.get_token_kind() == LITERAL || 
+        (token.get_token_kind() == KEYWORD && (token.get_value() == "true" || token.get_value() == "false"))) {
+        tokenizer->get_token(); // consume
+        return std::make_unique<Literal>(token);
+    }
+
+    return std::unexpected("Unexpected token in pattern parsing: " + token.get_value());
 }

@@ -15,8 +15,7 @@
 
 struct FunctionCase
 {
-    std::vector<Token> inputs;
-    //&std::vector<Token> outputs; // TODO: must be an function call, for once functional programming saves us
+    std::vector<std::unique_ptr<ASTValue>> inputs;
     std::unique_ptr<ASTValue> output;
 
     [[nodiscard]] llvm::Value* codegen(ParserData&) const;

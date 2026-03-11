@@ -15,6 +15,7 @@ public:
     explicit Variable(const Token&);
     llvm::Value* codegen(ParserData&) override;
     std::ostream& print(std::ostream& os) const override;
+    const std::string& get_name() const { return name; }
 private:
     std::string name;
 };

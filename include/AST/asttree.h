@@ -10,16 +10,18 @@
 #include <variant>
 #include "functiondeclaration.h"
 #include "parser/parser_data.h"
+#include "enumdeclaration.h"
 
 
 class ASTTree
 {
-    using TopLevelDeclaration = std::variant<std::unique_ptr<FunctionDeclaration>, std::unique_ptr<ASTDefinition>>;
-private:
+    using TopLevelDeclaration = std::variant<std::unique_ptr<FunctionDeclaration>, std::unique_ptr<ASTDefinition>, std::unique_ptr<EnumDeclaration>>;
+    private:
     std::vector<TopLevelDeclaration> children = {};
 public:
     void add_child(std::unique_ptr<FunctionDeclaration>);
     void add_child(std::unique_ptr<ASTDefinition>);
+    void add_child(std::unique_ptr<EnumDeclaration>);
     std::ostream& print(std::ostream& os) const;
     friend std::ostream& operator<<(std::ostream& os, const ASTTree& tree) {
         return tree.print(os);

@@ -1,0 +1,12 @@
+enum ResultFloat { Error, Ok(float) }
+
+func is_error (ResultFloat) -> int
+{
+    is_error(.Error) = 1;
+    is_error(_) = 0;
+}
+
+func main (int) -> int
+{
+    main(_) = is_error(.Ok(3)); // Should return 0
+}

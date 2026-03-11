@@ -1,9 +1,12 @@
-func fib int -> int
+enum ResultFloat { Error, Ok(float) }
+
+func is_error (ResultFloat) -> int
 {
-    fib(0) = 1;
-    fib(1) = 1;
-    fib(n) = sum(fib(sub(n, 1)), fib(sub(n, 2)));
+    is_error(.Error) = 1;
+    is_error(Ok(n)) = n;
 }
-func main void -> int {
-    fib(8);
+
+func main (int) -> int
+{
+    main(_) = is_error(.Ok(3)); // Should return 3
 }

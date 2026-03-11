@@ -14,6 +14,7 @@
 #include <vector>
 #include <string>
 
+#include "AST/enumdeclaration.h"
 
 struct ParserData{
 public:
@@ -31,12 +32,18 @@ public:
 
     void add_value(const std::string& name, llvm::Value* value, llvm::Type* type, bool global);
 
+    void register_enum(const std::string& name, const std::vector<EnumVariant>& variants);
+    const std::vector<EnumVariant>* get_enum(const std::string& name) const;
+    std::string get_enum_for_variant(const std::string& variant_name) const;
+
     static const llvm::Function * get_function(const std::string& name);
     llvm::Type* get_primitive(const std::string& name);
 
     std::string add_block(llvm::Function*);
     llvm::Function* get_block(const std::string& name);
 private:
+    std::unordered_map<std::string, std::vector<EnumVariant>> enums;
+    std::unordered_map<std::string, std::string> variant_to_enum;
     std::vector<std::unordered_map<std::string, std::tuple<llvm::Value*, llvm::Type*>>> values; // will be used as a stack (push and pop back)
     // when i get this working, i will merge values and types into one map
     std::unordered_map<std::string, llvm::Type*> primitives;

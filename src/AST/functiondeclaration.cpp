@@ -4,6 +4,9 @@
 
 #include "AST/functiondeclaration.h"
 #include "parser/parser_data.h"
+#include "AST/ASTValues/variable.h"
+#include "AST/ASTValues/literal.h"
+#include "AST/ASTValues/enumaccess.h"
 
 #include <utility>
 #include <iostream>
@@ -67,14 +70,16 @@ llvm::Function *FunctionDeclaration::prototype_codegen(ParserData& parser_data) 
     {
         int i = 0;
         char n = 'a';
-        for (auto& token: cases.front().inputs)
+        for (const auto& input: cases.front().inputs)
         {
-            if (token.get_value() != "void") {
-                if (token.get_token_kind() == IDENTIFIER) {
-                    f->getArg(i++)->setName(token.get_value());
+            if (auto var = dynamic_cast<Variable*>(input.get())) {
+                if (var->get_name() != "void" && var->get_name() != "_") {
+                    f->getArg(i++)->setName(var->get_name());
                 } else {
                     f->getArg(i++)->setName(std::string(1, n++));
                 }
+            } else {
+                f->getArg(i++)->setName(std::string(1, n++));
             }
         }
     } else
@@ -105,11 +110,12 @@ llvm::Function* FunctionDeclaration::codegen(ParserData& parser_data) const {
         parser_data.enter_scope();
         auto arg_it = f->arg_begin();
         for (const auto& input_token : cases.front().inputs) {
-             if (input_token.get_token_kind() == IDENTIFIER) {
-                 // It's a variable argument
-                 llvm::Value* arg_val = &*arg_it;
-                 std::string arg_name = input_token.get_value();
-                 parser_data.add_value(arg_name, arg_val, arg_val->getType(), false);
+             if (auto var = dynamic_cast<Variable*>(input_token.get())) {
+                 if (var->get_name() != "_") {
+                     llvm::Value* arg_val = &*arg_it;
+                     std::string arg_name = var->get_name();
+                     parser_data.add_value(arg_name, arg_val, arg_val->getType(), false);
+                 }
              }
              if (arg_it != f->arg_end()) ++arg_it;
         }
@@ -156,8 +162,8 @@ llvm::Function* FunctionDeclaration::codegen(ParserData& parser_data) const {
         for (const auto& tok : inputs) {
             if (argIt == args.end()) break;
 
-            if (tok.get_token_kind() == LITERAL) {
-                const int lit = std::stoi(tok.get_value());
+            if (auto litval = dynamic_cast<Literal*>(tok.get())) {
+                const int lit = std::stoi(litval->get_value());
                 const auto cmp = parser_data.builder->CreateICmpEQ(
                     *argIt,
                     llvm::ConstantInt::get(parser_data.get_primitive("int"), lit)
@@ -171,6 +177,27 @@ llvm::Function* FunctionDeclaration::codegen(ParserData& parser_data) const {
                      cond = parser_data.builder->CreateAnd(cond, cmp);
                 } else {
                      cond = cmp;
+                }
+            } else if (auto enumacc = dynamic_cast<EnumAccess*>(tok.get())) {
+                // Determine the integer tag index of this enum variant
+                std::string enum_name = parser_data.get_enum_for_variant(enumacc->get_variant_name());
+                auto variants = parser_data.get_enum(enum_name);
+                int tag_index = -1;
+                for (size_t k = 0; k < variants->size(); ++k) {
+                    if ((*variants)[k].name == enumacc->get_variant_name()) {
+                        tag_index = k;
+                        break;
+                    }
+                }
+                if (tag_index != -1) {
+                    llvm::Value* arg_tag = parser_data.builder->CreateExtractValue(*argIt, 0);
+                    llvm::Value* tag_val = llvm::ConstantInt::get(parser_data.get_primitive("int"), tag_index);
+                    const auto cmp = parser_data.builder->CreateICmpEQ(arg_tag, tag_val);
+                    if (cond) {
+                        cond = parser_data.builder->CreateAnd(cond, cmp);
+                    } else {
+                        cond = cmp;
+                    }
                 }
             }
             ++argIt;
@@ -192,8 +219,21 @@ llvm::Function* FunctionDeclaration::codegen(ParserData& parser_data) const {
         for (const auto& tok : inputs) {
             if (argIt == args.end()) break;
             
-            if (tok.get_token_kind() == IDENTIFIER) {
-                parser_data.add_value(tok.get_value(), *argIt, parser_data.get_primitive(tok.get_value()), false);
+            if (auto var = dynamic_cast<Variable*>(tok.get())) {
+                if (var->get_name() != "_") {
+                    parser_data.add_value(var->get_name(), *argIt, (*argIt)->getType(), false);
+                }
+            } else if (auto enumacc = dynamic_cast<EnumAccess*>(tok.get())) {
+                // Extract and bind payload
+                for (size_t p_idx = 0; p_idx < enumacc->get_payload().size(); ++p_idx) {
+                    const auto& p = enumacc->get_payload()[p_idx];
+                    if (auto var = dynamic_cast<Variable*>(p.get())) {
+                        if (var->get_name() != "_") {
+                            llvm::Value* payload_val = parser_data.builder->CreateExtractValue(*argIt, 1);
+                            parser_data.add_value(var->get_name(), payload_val, payload_val->getType(), false);
+                        }
+                    }
+                }
             }
             ++argIt;
         }
@@ -220,7 +260,7 @@ std::ostream& FunctionCase::print(std::ostream& os) const {
     os << "function case: \n\tinputs: \n\t";
     for (const auto& input: inputs)
     {
-        input.print(os);
+        input->print(os);
         os << ", ";
     }
 

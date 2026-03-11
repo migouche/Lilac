@@ -8,11 +8,13 @@
 #include <memory>
 #include <expected>
 #include <vector>
+#include <unordered_set>
 
 #include "lexer/tokenizer.h"
 #include "AST/asttree.h"
 // Forward declarations
 class FunctionDeclaration;
+class EnumDeclaration;
 class FunctionCall;
 class ASTDefinition;
 class ASTValue;
@@ -26,14 +28,17 @@ class Parser
 private:
     std::unique_ptr<Tokenizer> tokenizer;
     std::expected<std::unique_ptr<FunctionDeclaration>, std::string> parse_function();
+    std::expected<std::unique_ptr<EnumDeclaration>, std::string> parse_enum();
     std::expected<std::unique_ptr<FunctionCall>, std::string> parse_call();
     std::expected<std::unique_ptr<ASTDefinition>, std::string> parse_definition();
     std::expected<std::unique_ptr<ASTValue>, std::string> parse_value();
+    std::expected<std::unique_ptr<ASTValue>, std::string> parse_pattern();
     std::expected<std::unique_ptr<Tuple>, std::string> parse_tuple();
     std::expected<std::unique_ptr<ASTIf>, std::string> parse_if();
     std::expected<std::unique_ptr<ASTBlock>, std::string> parse_block();
 
     std::vector<std::vector<std::string>> token_stack;
+    std::unordered_set<std::string> known_enum_variants;
 
 public:
 

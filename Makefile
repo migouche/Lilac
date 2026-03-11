@@ -82,7 +82,7 @@ debug:
 	ASAN_OPTIONS=$(ASAN_OPTS) ./build/lilac data/function.llc -g -o output.out
 
 .SILENT: run-normal
-run-debug: normal
+run-debug: debug
 	@echo "Running output.out:"
 	-./output.out; echo "Exit code: $$?"
 

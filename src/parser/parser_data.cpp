@@ -56,6 +56,29 @@ void ParserData::add_value(const std::string &name, llvm::Value *value, llvm::Ty
         values.back()[name] = std::make_tuple(value, type);
 }
 
+void ParserData::register_enum(const std::string& name, const std::vector<EnumVariant>& variants) {
+    enums[name] = variants;
+    for (const auto& variant : variants) {
+        variant_to_enum[variant.name] = name;
+    }
+}
+
+const std::vector<EnumVariant>* ParserData::get_enum(const std::string& name) const {
+    auto it = enums.find(name);
+    if (it != enums.end()) {
+        return &it->second;
+    }
+    return nullptr;
+}
+
+std::string ParserData::get_enum_for_variant(const std::string& variant_name) const {
+    auto it = variant_to_enum.find(variant_name);
+    if (it != variant_to_enum.end()) {
+        return it->second;
+    }
+    return "";
+}
+
 llvm::Value* ParserData::get_value(const std::string &name) const {
     for (const auto& scope: std::ranges::reverse_view(values)){
         if(auto it = scope.find(name); it != scope.end())
@@ -73,8 +96,21 @@ llvm::Type* ParserData::get_type(const std::string &name) const
     return nullptr;
 }
 
-llvm::Type *ParserData::get_primitive(const std::string &name) {
-    return primitives[name];
+llvm::Type* ParserData::get_primitive(const std::string &name) {
+    auto it = primitives.find(name);
+    if (it != primitives.end()) {
+        return it->second;
+    }
+    // Check if it's an enum
+    if (enums.find(name) != enums.end()) {
+        std::vector<llvm::Type*> elements = {
+            llvm::Type::getInt32Ty(*context), // tag
+            llvm::Type::getInt32Ty(*context)  // payload (int/float representation)
+        };
+        return llvm::StructType::get(*context, elements);
+    }
+    std::cerr << "Warning: type not found '" << name << "'" << std::endl;
+    return nullptr;
 }
 
 std::string ParserData::add_block(llvm::Function* func)

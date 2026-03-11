@@ -17,6 +17,9 @@ std::ostream& ASTTree::print(std::ostream& os) const {
         } else if (std::holds_alternative<std::unique_ptr<ASTDefinition>>(child)) {
             const auto& def = std::get<std::unique_ptr<ASTDefinition>>(child);
             def->print(os);
+        } else if (std::holds_alternative<std::unique_ptr<EnumDeclaration>>(child)) {
+            const auto& enm = std::get<std::unique_ptr<EnumDeclaration>>(child);
+            enm->print(os);
         }
     }
     os << "End of AST Tree." << std::endl;
@@ -33,9 +36,21 @@ void ASTTree::add_child(std::unique_ptr<ASTDefinition> node) {
     children.emplace_back(std::move(node));
 }
 
+void ASTTree::add_child(std::unique_ptr<EnumDeclaration> node) {
+    children.emplace_back(std::move(node));
+}
+
 ASTTree::ASTTree(): children(std::vector<TopLevelDeclaration>()) {}
 
 void ASTTree::codegen(ParserData& data) const{
+    // pass 0, codegen enums
+    for (const auto& child: children) {
+        if (std::holds_alternative<std::unique_ptr<EnumDeclaration>>(child)) {
+            const auto& enm = std::get<std::unique_ptr<EnumDeclaration>>(child);
+            (void)enm->codegen(data);
+        }
+    }
+
     // first pass, codegen prototypes:
     for (const auto& child: children) {
         if (std::holds_alternative<std::unique_ptr<FunctionDeclaration>>(child)) {

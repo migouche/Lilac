@@ -17,6 +17,7 @@ public:
 
     std::ostream& print(std::ostream& os) const override;
     llvm::Value * codegen(ParserData&) override;
+    const std::string& get_value() const { return value; }
 
 };
 

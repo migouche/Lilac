@@ -1,9 +1,7 @@
 #include "compiler/compiler.h"
-#include "lexer/tokenizer.h"
 #include <iostream>
 
 #include "debugmode.h" // remove this line to disable "debug mode"
-#include "parser/parser_data.h"
 
 #include <CLI/CLI11.hpp>
 
