@@ -8,6 +8,7 @@
 #include <memory>
 #include <vector>
 #include <variant>
+#include "AST/astdefinition.h"
 #include "functiondeclaration.h"
 #include "parser/parser_data.h"
 #include "enumdeclaration.h"

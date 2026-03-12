@@ -6,6 +6,12 @@
 #include <llvm/TargetParser/Host.h>
 #include <llvm/Support/TargetSelect.h>
 #include <clang/Frontend/CompilerInstance.h>
+#include <clang/Driver/Driver.h>
+#include <clang/Driver/Compilation.h>
+#include <clang/Frontend/TextDiagnosticPrinter.h>
+#include <clang/Basic/Diagnostic.h>
+#include <clang/Basic/DiagnosticIDs.h>
+#include <clang/Basic/DiagnosticOptions.h>
 #include "compiler/compiler.h"
 
 #include <llvm/IR/Module.h>
@@ -114,19 +120,28 @@ Compiler::Compiler(const std::vector <std::string>& files, const std::string& ou
     llvm::outs() << "Wrote " << output_object_file << "\n";
 
     // Link the object file to create an executable
-    //std::string executable_file = "output";
-    std::string link_command = "clang++ output.o -o " + output;
-    if (int link_result = std::system(link_command.c_str()); link_result != 0) {
-        llvm::errs() << "Linking failed with exit code " << link_result << "\n";
-    } else {
-        llvm::outs() << "Executable created: " << output << "\n";
-        // delete the object file after linking
-        std::filesystem::remove("output.o");
-        //std::system(delete_command.c_str());
+    auto DiagIDs = llvm::makeIntrusiveRefCnt<clang::DiagnosticIDs>();
+    clang::DiagnosticOptions DiagOpts;
+    clang::TextDiagnosticPrinter *DiagClient = new clang::TextDiagnosticPrinter(llvm::errs(), DiagOpts);
+    clang::DiagnosticsEngine Diags(DiagIDs, DiagOpts, DiagClient);
 
+    std::string clangPath = "clang++";
+    clang::driver::Driver TheDriver(clangPath, llvm::sys::getDefaultTargetTriple(), Diags);
+    TheDriver.setTitle("lilac-linker");
+
+    std::vector<const char*> Args = {"clang++", output_object_file.c_str(), "-o", output.c_str()};
+    std::unique_ptr<clang::driver::Compilation> C(TheDriver.BuildCompilation(Args));
+
+    if (C && !C->containsError()) {
+        llvm::SmallVector<std::pair<int, const clang::driver::Command *>, 4> FailingCommands;
+        int Res = TheDriver.ExecuteCompilation(*C, FailingCommands);
+        if (Res == 0) {
+            llvm::outs() << "Executable created: " << output << "\n";
+            std::filesystem::remove("output.o");
+        } else {
+            llvm::errs() << "Linking failed with exit code " << Res << "\n";
+        }
     }
-
-
 }
 
 const std::unique_ptr<ParserData> & Compiler::get_parser_data() const{

@@ -4,7 +4,10 @@
 
 #ifndef ASTDEFINITION_H
 #define ASTDEFINITION_H
-#include "ASTValues/variable.h"
+
+#include <string>
+#include <memory>
+#include "AST/astvalue.h"
 
 class ASTDefinition
 {

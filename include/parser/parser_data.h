@@ -10,7 +10,6 @@
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/IRBuilder.h>
 #include <unordered_map>
-#include <queue>
 #include <vector>
 #include <string>
 

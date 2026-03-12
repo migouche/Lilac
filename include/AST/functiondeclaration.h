@@ -8,7 +8,6 @@
 #include <vector>
 #include <memory>
 
-#include "astdefinition.h"
 #include "lexer/token.h"
 #include "astvalue.h"
 #include "parser/parser_data.h"

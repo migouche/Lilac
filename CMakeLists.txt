@@ -67,4 +67,4 @@ message(STATUS "CLANG_LIBS: ${CLANG_LIBS}")
 list(REMOVE_DUPLICATES LLVM_LIBS)
 list(REMOVE_DUPLICATES CLANG_LIBS)
 
-target_link_libraries(lilac LLVM)
+target_link_libraries(lilac LLVM clang-cpp)
